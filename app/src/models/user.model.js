@@ -4,7 +4,7 @@ const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
   id: {
-    type: DataTypes.BIGINT,
+    type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
   },
@@ -17,7 +17,7 @@ const User = sequelize.define('User', {
   email: {
     type: DataTypes.STRING(150),
     allowNull: false,
-    unique: true,
+    unique: 'unique_email', // Named unique constraint
   },
 
   password: {
@@ -33,6 +33,7 @@ const User = sequelize.define('User', {
 }, {
   tableName: 'users',
   timestamps: true,
+  paranoid: true, // soft deletion
 });
 
 module.exports = User;

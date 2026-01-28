@@ -5,13 +5,13 @@ const sequelize = require('../config/database');
 
 const Session = sequelize.define('Session', {
   id: {
-    type: DataTypes.BIGINT,
+    type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
   },
 
   userId: {
-    type: DataTypes.BIGINT,
+    type: DataTypes.INTEGER,
     allowNull: false,
   },
 

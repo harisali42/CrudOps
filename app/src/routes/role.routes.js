@@ -3,16 +3,14 @@ const router = express.Router();
 const roleController = require('../controllers/role.controller');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { authorize } = require('../middlewares/role.middleware');
+const { validateSchema } = require('../middlewares/validate.schema.middleware');
+const { createRoleSchema, updateRoleSchema } = require('../validations/role.validation');
+const { roleIdParamSchema } = require('../validations/role.param.validation');
 
-router.use(authenticate, authorize('ADMIN'));
-
-router.post('/', roleController.createRole);
+router.post('/', validateSchema(createRoleSchema), roleController.createRole);
 router.get('/', roleController.getAllRoles);
-router.get('/:id', roleController.getRoleById);
-router.put('/:id', roleController.updateRole);
-router.delete('/:id', roleController.deleteRole);
-
-
-
+router.get('/:id', validateSchema(roleIdParamSchema, 'params'), roleController.getRoleById);
+router.put('/:id', validateSchema(roleIdParamSchema, 'params'), validateSchema(updateRoleSchema), roleController.updateRole);
+router.delete('/:id', validateSchema(roleIdParamSchema, 'params'), roleController.deleteRole);
 
 module.exports = router;

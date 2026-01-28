@@ -4,7 +4,7 @@ const { User, Role, UserRole } = require('../models');
 
 (async () => {
   try {
-    const user = await User.findOne({ where: { email: 'haris@example.com' } });
+    const user = await User.findOne({ where: { email: 'your-email@example.com' } }); // Change this email
     const role = await Role.findOne({ where: { name: 'ADMIN' } });
 
     if (!user) throw new Error('Admin user not found');

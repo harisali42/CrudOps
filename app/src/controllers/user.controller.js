@@ -1,6 +1,5 @@
-const bcrypt = require('bcrypt');
-const { User } = require('../models');
 const { sendResponse } = require('../utils/response');
+const userService = require('../services/user.service');
 
 /**
  * CREATE USER
@@ -8,27 +7,10 @@ const { sendResponse } = require('../utils/response');
 exports.createUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return sendResponse(res, 400, false, 'All fields are required');
-    }
-
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return sendResponse(res, 409, false, 'Email already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
+    const user = await userService.createUser(name, email, password);
     return sendResponse(res, 201, true, 'User created successfully', user);
   } catch (error) {
-    return sendResponse(res, 500, false, error.message);
+    return sendResponse(res, 400, false, error.message);
   }
 };
 
@@ -37,10 +19,7 @@ exports.createUser = async (req, res) => {
  */
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll({
-      attributes: { exclude: ['password'] },
-    });
-
+    const users = await userService.getAllUsers();
     return sendResponse(res, 200, true, 'Users fetched', users);
   } catch (error) {
     return sendResponse(res, 500, false, error.message);
@@ -53,18 +32,10 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const user = await User.findByPk(id, {
-      attributes: { exclude: ['password'] },
-    });
-
-    if (!user) {
-      return sendResponse(res, 404, false, 'User not found');
-    }
-
+    const user = await userService.getUserById(id);
     return sendResponse(res, 200, true, 'User fetched', user);
   } catch (error) {
-    return sendResponse(res, 500, false, error.message);
+    return sendResponse(res, 404, false, error.message);
   }
 };
 
@@ -75,17 +46,10 @@ exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, isActive } = req.body;
-
-    const user = await User.findByPk(id);
-    if (!user) {
-      return sendResponse(res, 404, false, 'User not found');
-    }
-
-    await user.update({ name, isActive });
-
+    const user = await userService.updateUser(id, name, isActive);
     return sendResponse(res, 200, true, 'User updated', user);
   } catch (error) {
-    return sendResponse(res, 500, false, error.message);
+    return sendResponse(res, 404, false, error.message);
   }
 };
 
@@ -95,16 +59,9 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const user = await User.findByPk(id);
-    if (!user) {
-      return sendResponse(res, 404, false, 'User not found');
-    }
-
-    await user.destroy();
-
+    await userService.deleteUser(id);
     return sendResponse(res, 200, true, 'User deleted');
   } catch (error) {
-    return sendResponse(res, 500, false, error.message);
+    return sendResponse(res, 404, false, error.message);
   }
 };

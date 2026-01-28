@@ -1,5 +1,5 @@
-const { Role } = require('../models');
 const { sendResponse } = require('../utils/response');
+const roleService = require('../services/role.service');
 
 /**
  * CREATE ROLE
@@ -7,21 +7,10 @@ const { sendResponse } = require('../utils/response');
 exports.createRole = async (req, res) => {
   try {
     const { name, description } = req.body;
-
-    if (!name) {
-      return sendResponse(res, 400, false, 'Role name is required');
-    }
-
-    const existingRole = await Role.findOne({ where: { name } });
-    if (existingRole) {
-      return sendResponse(res, 409, false, 'Role already exists');
-    }
-
-    const role = await Role.create({ name, description });
-
+    const role = await roleService.createRole(name, description);
     return sendResponse(res, 201, true, 'Role created successfully', role);
   } catch (error) {
-    return sendResponse(res, 500, false, error.message);
+    return sendResponse(res, 409, false, error.message);
   }
 };
 
@@ -30,8 +19,7 @@ exports.createRole = async (req, res) => {
  */
 exports.getAllRoles = async (req, res) => {
   try {
-    const roles = await Role.findAll();
-
+    const roles = await roleService.getAllRoles();
     return sendResponse(res, 200, true, 'Roles fetched', roles);
   } catch (error) {
     return sendResponse(res, 500, false, error.message);
@@ -44,15 +32,10 @@ exports.getAllRoles = async (req, res) => {
 exports.getRoleById = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const role = await Role.findByPk(id);
-    if (!role) {
-      return sendResponse(res, 404, false, 'Role not found');
-    }
-
+    const role = await roleService.getRoleById(id);
     return sendResponse(res, 200, true, 'Role fetched', role);
   } catch (error) {
-    return sendResponse(res, 500, false, error.message);
+    return sendResponse(res, 404, false, error.message);
   }
 };
 
@@ -63,17 +46,10 @@ exports.updateRole = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description } = req.body;
-
-    const role = await Role.findByPk(id);
-    if (!role) {
-      return sendResponse(res, 404, false, 'Role not found');
-    }
-
-    await role.update({ name, description });
-
+    const role = await roleService.updateRole(id, name, description);
     return sendResponse(res, 200, true, 'Role updated', role);
   } catch (error) {
-    return sendResponse(res, 500, false, error.message);
+    return sendResponse(res, 404, false, error.message);
   }
 };
 
@@ -83,16 +59,9 @@ exports.updateRole = async (req, res) => {
 exports.deleteRole = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const role = await Role.findByPk(id);
-    if (!role) {
-      return sendResponse(res, 404, false, 'Role not found');
-    }
-
-    await role.destroy();
-
+    await roleService.deleteRole(id);
     return sendResponse(res, 200, true, 'Role deleted');
   } catch (error) {
-    return sendResponse(res, 500, false, error.message);
+    return sendResponse(res, 404, false, error.message);
   }
 };

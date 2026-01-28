@@ -4,7 +4,7 @@ const sequelize = require('../config/database');
 
 const Role = sequelize.define('Role', {
   id: {
-    type: DataTypes.BIGINT,
+    type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
   },
@@ -22,6 +22,7 @@ const Role = sequelize.define('Role', {
 }, {
   tableName: 'roles',
   timestamps: true,
+  paranoid: true,
 });
 
 module.exports = Role;

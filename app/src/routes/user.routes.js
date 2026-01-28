@@ -3,11 +3,14 @@ const router = express.Router();
 const userController = require('../controllers/user.controller');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { authorize } = require('../middlewares/role.middleware');
+const { validateSchema } = require('../middlewares/validate.schema.middleware');
+const { createUserSchema, updateUserSchema, userIdParamSchema } = require('../validations/user.validation');
 
-router.post('/', userController.createUser);
-router.get('/', authenticate, authorize('ADMIN'), userController.getAllUsers);
-router.get('/:id', authenticate, authorize('ADMIN'), userController.getUserById);
-router.put('/:id', authenticate, authorize('ADMIN'), userController.updateUser);
-router.delete('/:id', authenticate, authorize('ADMIN'), userController.deleteUser);
+router.post('/', validateSchema(createUserSchema), userController.createUser);
+
+router.get('/', userController.getAllUsers);
+router.get('/:id', validateSchema(userIdParamSchema, 'params'), userController.getUserById);
+router.put('/:id', validateSchema(userIdParamSchema, 'params'), validateSchema(updateUserSchema), userController.updateUser);
+router.delete('/:id', validateSchema(userIdParamSchema, 'params'), userController.deleteUser);
 
 module.exports = router;
