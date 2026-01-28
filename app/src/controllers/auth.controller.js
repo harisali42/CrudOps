@@ -2,17 +2,23 @@ const bcrypt = require('bcrypt');
 const { User, Session } = require('../models');
 const { generateToken } = require('../config/jwt');
 const { sendResponse } = require('../utils/response');
+const { loginSchema } = require('../validations/auth.validation');
 
 /**
  * LOGIN
  */
 exports.loginUser = async (req, res) => {
+
+  const { error } = loginSchema.validate(req.body);
+  if (error) {
+    return sendResponse(res, 400, false, error.details[0].message);
+  }
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return sendResponse(res, 400, false, 'Email and password are required');
-    }
+    // if (!email || !password) {
+    //   return sendResponse(res, 400, false, 'Email and password are required');
+    // }
 
     const user = await User.findOne({ where: { email } });
     if (!user) {
