@@ -26,10 +26,17 @@ exports.createUser = async (name, email, password) => {
 /**
  * GET ALL USERS
  */
-exports.getAllUsers = async () => {
-  return User.findAll({
+exports.getAllUsers = async (page = 0, size = 10) => {
+  const { limit, offset } = require('../utils/pagination').getPagination(page, size);
+  
+  const data = await User.findAndCountAll({
     attributes: { exclude: ['password'] },
+    limit,
+    offset,
+    order: [['createdAt', 'DESC']],
   });
+
+  return require('../utils/pagination').getPagingData(data, page, limit);
 };
 
 /**

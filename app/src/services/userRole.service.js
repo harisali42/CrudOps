@@ -1,4 +1,5 @@
 const { User, Role, UserRole } = require('../models');
+const { getEnumValues } = require('../constants/enums');
 
 /**
  * ASSIGN ROLE TO USER
@@ -7,6 +8,12 @@ exports.assignRoleToUser = async (userId, roleName) => {
   const user = await User.findByPk(userId);
   if (!user) {
     throw new Error('User not found');
+  }
+
+  // Validate role name exists in ROLE enum
+  const validRoles = getEnumValues(require('../constants/enums').ROLE);
+  if (!validRoles.includes(roleName)) {
+    throw new Error(`Invalid role. Allowed roles: ${validRoles.join(', ')}`);
   }
 
   const role = await Role.findOne({ where: { name: roleName } });
@@ -39,6 +46,12 @@ exports.removeRoleFromUser = async (userId, roleName) => {
   const user = await User.findByPk(userId);
   if (!user) {
     throw new Error('User not found');
+  }
+
+  // Validate role name exists in ROLE enum
+  const validRoles = getEnumValues(require('../constants/enums').ROLE);
+  if (!validRoles.includes(roleName)) {
+    throw new Error(`Invalid role. Allowed roles: ${validRoles.join(', ')}`);
   }
 
   const role = await Role.findOne({ where: { name: roleName } });

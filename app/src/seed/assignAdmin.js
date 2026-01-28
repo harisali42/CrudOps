@@ -1,11 +1,13 @@
 require('dotenv').config();
 
 const { User, Role, UserRole } = require('../models');
+const { ROLE } = require('../constants/enums');
+const logger = require('../config/logger');
 
 (async () => {
   try {
     const user = await User.findOne({ where: { email: 'your-email@example.com' } }); // Change this email
-    const role = await Role.findOne({ where: { name: 'ADMIN' } });
+    const role = await Role.findOne({ where: { name: ROLE.ADMIN } });
 
     if (!user) throw new Error('Admin user not found');
     if (!role) throw new Error('ADMIN role not found');
@@ -17,10 +19,10 @@ const { User, Role, UserRole } = require('../models');
       },
     });
 
-    console.log('✅ ADMIN role assigned successfully');
+    logger.info('✅ ADMIN role assigned successfully');
     process.exit(0);
   } catch (err) {
-    console.error('❌', err.message);
+    logger.error('❌', err.message);
     process.exit(1);
   }
 })();

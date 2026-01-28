@@ -19,7 +19,8 @@ exports.createUser = async (req, res) => {
  */
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await userService.getAllUsers();
+    const { page = 0, size = 10 } = req.query;
+    const users = await userService.getAllUsers(page, size);
     return sendResponse(res, 200, true, 'Users fetched', users);
   } catch (error) {
     return sendResponse(res, 500, false, error.message);

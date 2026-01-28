@@ -1,3 +1,6 @@
+const { ROLE } = require('../constants/enums');
+const { sendResponse } = require('../utils/response');
+
 exports.authorize = (...allowedRoles) => {
   return (req, res, next) => {
     const userRoles = req.user.Roles.map(role => role.name);
@@ -7,7 +10,7 @@ exports.authorize = (...allowedRoles) => {
     );
 
     if (!hasAccess) {
-      return res.status(403).json({ message: 'Forbidden: insufficient role' });
+      return sendResponse(res, 403, false, 'Forbidden: insufficient role');
     }
 
     next();

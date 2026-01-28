@@ -32,13 +32,13 @@ const { User, Role, UserRole } = require('../models');
 
     // Step 2b: Create MANAGER role if not exists
     const [managerRole] = await Role.findOrCreate({
-      where: { name: 'MANAGER' },
+      where: { name: ROLE.MANAGER },
       defaults: { 
-        name: 'MANAGER', 
+        name: ROLE.MANAGER, 
         description: 'Team Manager' 
       },
     });
-    console.log('✅ MANAGER role created/found');
+    logger.info('✅ MANAGER role created/found');
 
     // Step 3: Create first admin user
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
@@ -55,9 +55,9 @@ const { User, Role, UserRole } = require('../models');
         password: hashedPassword,
         isActive: true,
       });
-      console.log(`Admin user created: ${adminEmail}`);
+      logger.info(`✅ Admin user created: ${adminEmail}`);
     } else {
-      console.log(`Admin user already exists: ${adminEmail}`);
+      logger.info(`ℹ️  Admin user already exists: ${adminEmail}`);
     }
 
     // Step 4: Assign ADMIN role to user
@@ -69,22 +69,22 @@ const { User, Role, UserRole } = require('../models');
     });
 
     if (created) {
-      console.log('ADMIN role assigned to user');
+      logger.info('✅ ADMIN role assigned to user');
     } else {
-      console.log('User already has ADMIN role');
+      logger.info('ℹ️  User already has ADMIN role');
     }
 
-    console.log('\nAdmin initialization complete!');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('Email:', adminEmail);
-    console.log('Password:', adminPassword);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-
+    logger.info('\n🎉 Admin initialization complete!');
+    logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.info('📧 Email:', adminEmail);
+    logger.info('🔑 Password:', adminPassword);
+    logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    logger.info('⚠️  IMPORTANT: Change the password after first login!\n');
 
     process.exit(0);
   } catch (err) {
-    console.error('Error:', err.message);
-    console.error(err);
+    logger.error('Error:', err.message);
+    logger.error(err);
     process.exit(1);
   }
 })();
