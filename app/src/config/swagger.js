@@ -1,4 +1,7 @@
+
 const swaggerJsdoc = require('swagger-jsdoc');
+const { createUserSchema } = require('../validations/user.validation');
+const joiToSwagger = require('joi-to-swagger');
 
 const options = {
   definition: {
@@ -33,40 +36,15 @@ const options = {
         },
       },
       schemas: {
+        // Auto-generated from Joi
         User: {
-          type: 'object',
-          required: ['name', 'email', 'password'],
+          ...joiToSwagger(createUserSchema).swagger,
           properties: {
-            id: {
-              type: 'integer',
-              example: 1,
-            },
-            name: {
-              type: 'string',
-              example: 'Haris',
-            },
-            email: {
-              type: 'string',
-              format: 'email',
-              example: 'haris@example.com',
-            },
-            password: {
-              type: 'string',
-              format: 'password',
-              example: 'SecurePassword123',
-            },
-            isActive: {
-              type: 'boolean',
-              example: true,
-            },
-            createdAt: {
-              type: 'string',
-              format: 'date-time',
-            },
-            updatedAt: {
-              type: 'string',
-              format: 'date-time',
-            },
+            ...joiToSwagger(createUserSchema).swagger.properties,
+            id: { type: 'integer', example: 1 },
+            isActive: { type: 'boolean', example: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
           },
         },
         Role: {

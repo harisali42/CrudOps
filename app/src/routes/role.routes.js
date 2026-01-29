@@ -4,8 +4,7 @@ const roleController = require('../controllers/role.controller');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { authorize } = require('../middlewares/role.middleware');
 const { validateSchema } = require('../middlewares/validate.schema.middleware');
-const { createRoleSchema, updateRoleSchema } = require('../validations/role.validation');
-const { roleIdParamSchema } = require('../validations/role.param.validation');
+const { createRoleSchema, updateRoleSchema, roleIdParamSchema } = require('../validations/role.validation');
 
 /**
  * @swagger
