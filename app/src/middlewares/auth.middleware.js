@@ -35,9 +35,20 @@ exports.authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'Session expired or logged out' });
     }
 
-    // Load user
+
+    // Load user with roles via UserRole
     const user = await User.findByPk(decoded.userId, {
-      include: Role,
+      include: [
+        {
+          model: require('../models').UserRole,
+          include: [
+            {
+              model: Role,
+              attributes: ['id', 'name']
+            }
+          ]
+        }
+      ]
     });
 
     if (!user || user.status !== 'active') {
@@ -50,6 +61,7 @@ exports.authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    console.error('AUTH ERROR:', error);
+    return res.status(401).json({ message: 'Unauthorized', error: error.message });
   }
 };
