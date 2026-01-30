@@ -60,7 +60,7 @@ const { limit, offset } = getPagination(page, size);
   userJson.roles = userJson.UserRoles
     ? userJson.UserRoles.map(ur => ur.Role.name)
     : [];
-  delete userJson.UserRoles; // hide the pivot table
+  delete userJson.UserRoles; 
   return userJson;
 });
 

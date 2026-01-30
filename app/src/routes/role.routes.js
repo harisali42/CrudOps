@@ -5,7 +5,7 @@ const { authenticate } = require('../middlewares/auth.middleware');
 const { authorize } = require('../middlewares/role.middleware');
 
 
-router.post('/', authenticate, authorize('ADMIN'), createRole);
+router.post('/', createRole);
 router.get('/', authenticate, authorize('ADMIN'), getAllRoles);
 router.get('/:id', authenticate, authorize('ADMIN'), getRoleById);
 router.put('/:id', authenticate, authorize('ADMIN'), updateRole);

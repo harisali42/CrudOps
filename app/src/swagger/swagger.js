@@ -1,7 +1,17 @@
 
+
 const swaggerJsdoc = require('swagger-jsdoc');
-const { createUserSchema } = require('../validations/user.validation');
+const Joi = require('joi');
 const joiToSwagger = require('joi-to-swagger');
+
+// Define Joi user schema directly here
+const createUserSchema = Joi.object({
+  firstName: Joi.string().min(2).max(50).required(),
+  lastName: Joi.string().min(2).max(50).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).max(128).required(),
+  status: Joi.string().valid('active', 'non-active').default('active'),
+});
 
 const options = {
   definition: {
