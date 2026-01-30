@@ -1,9 +1,18 @@
-const sendResponse = (res, status, success, message, data = null) => {
+
+const sendResponse = (res, status, success, message, data = {}) => {
   return res.status(status).json({
-    success,
     message,
-    data,
+    data: {
+      success,
+      ...data
+    }
   });
 };
 
 module.exports = { sendResponse };
+//   return res.status(status).json({
+//     message,
+//     data{
+//        success
+//     },
+//   });

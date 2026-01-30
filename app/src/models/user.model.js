@@ -1,4 +1,3 @@
-// module.exports = (sequelize, DataTypes) => {};
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -9,15 +8,19 @@ const User = sequelize.define('User', {
     primaryKey: true,
   },
 
-  name: {
-    type: DataTypes.STRING(100),
+  firstName: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+  },
+  lastName: {
+    type: DataTypes.STRING(50),
     allowNull: false,
   },
 
   email: {
     type: DataTypes.STRING(150),
     allowNull: false,
-    unique: 'unique_email', // Named unique constraint
+    unique: true,
   },
 
   password: {
@@ -25,10 +28,12 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
 
-  isActive: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
+  status: {
+    type: DataTypes.ENUM('active', 'non-active'),
+    defaultValue: 'active',
+    allowNull: false,
   },
+  
 
 }, {
   tableName: 'users',

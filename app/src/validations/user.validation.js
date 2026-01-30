@@ -1,8 +1,12 @@
 const Joi = require('joi');
 
+
 exports.createUserSchema = Joi.object({
-  name: Joi.string().required().messages({
-    'any.required': 'Name is required',
+  firstName: Joi.string().required().messages({
+    'any.required': 'First name is required',
+  }),
+  lastName: Joi.string().required().messages({
+    'any.required': 'Last name is required',
   }),
   email: Joi.string().email().required().messages({
     'string.email': 'Please provide a valid email',
@@ -15,8 +19,9 @@ exports.createUserSchema = Joi.object({
 });
 
 exports.updateUserSchema = Joi.object({
-  name: Joi.string().optional(),
-  isActive: Joi.boolean().optional(),
+  firstName: Joi.string().optional(),
+  lastName: Joi.string().optional(),
+  status: Joi.string().valid('active', 'non-active').optional(),
 });
 
 exports.userIdParamSchema = Joi.object({

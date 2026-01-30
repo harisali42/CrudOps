@@ -14,11 +14,7 @@ const { limiter, authLimiter } = require('./config/rateLimiting');
 const { errorHandler, notFoundHandler } = require('./middlewares/error.middleware');
 
 // Routes
-const userRoutes = require('./routes/user.routes');
-const roleRoutes = require('./routes/role.routes');
-const authRoutes = require('./routes/auth.routes');
-const userRoleRoutes = require('./routes/userRole.routes');
-const healthRoutes = require('./routes/health.routes');
+const routes = require('./routes');
 
 require('./models');
 require('./jobs'); // Initialize cron jobs
@@ -48,13 +44,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // Health check endpoint
-healthRoutes(app);
+routes.healthRoutes(app);
 
 // API routes
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/roles', roleRoutes);
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/user-roles', userRoleRoutes);
+app.use('/api/v1/users', routes.userRoutes);
+app.use('/api/v1/roles', routes.roleRoutes);
+app.use('/api/v1/auth', routes.authRoutes);
 
 // 404 handler & Global error handler (must be last)
 app.use(notFoundHandler);

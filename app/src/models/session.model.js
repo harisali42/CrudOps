@@ -1,5 +1,3 @@
-// module.exports = (sequelize, DataTypes) => {};
-
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -15,15 +13,12 @@ const Session = sequelize.define('Session', {
     allowNull: false,
   },
 
-  token: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-  },
 
   isValid: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
   },
+  
 
 }, {
   tableName: 'sessions',

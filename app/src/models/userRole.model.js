@@ -1,4 +1,3 @@
-// module.exports = (sequelize, DataTypes) => {};
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
