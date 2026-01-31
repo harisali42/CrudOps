@@ -1,4 +1,4 @@
-// Centralized controller exports for user, role, auth, and userRole
+// Centralized controller exports
 
 // User controllers
 const createUser = require('./user/create');
@@ -13,6 +13,20 @@ const getAllRoles = require('./role/getAll');
 const getRoleById = require('./role/getById');
 const updateRole = require('./role/update');
 const deleteRole = require('./role/delete');
+
+// Teacher controllers
+const createTeacher = require('./teacher/create');
+const getAllTeachers = require('./teacher/getAll');
+const getTeacherById = require('./teacher/getById');
+const updateTeacher = require('./teacher/update');
+const deleteTeacher = require('./teacher/delete');
+
+// Student controllers
+const createStudent = require('./student/create');
+const getAllStudents = require('./student/getAll');
+const getStudentById = require('./student/getById');
+const updateStudent = require('./student/update');
+const deleteStudent = require('./student/delete');
 
 // Auth controllers
 const loginUser = require('./auth/login');
@@ -43,4 +57,16 @@ module.exports = {
   assignRole,
   removeRole,
   getUserRoles,
+  // Teacher
+  createTeacher,
+  getAllTeachers,
+  getTeacherById,
+  updateTeacher,
+  deleteTeacher,
+  // Student  
+  createStudent,
+  getAllStudents,
+  getStudentById,
+  updateStudent,
+  deleteStudent,
 };

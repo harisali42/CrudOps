@@ -32,4 +32,4 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-// ...other auth swagger docs...
+

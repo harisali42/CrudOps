@@ -6,6 +6,12 @@ const { createUser, getAllUsers, getUserById, updateUser, deleteUser, assignRole
 // Role services
 const { createRole, getAllRoles, getRoleById, updateRole, deleteRole } = require('./role.service');
 
+// Student services
+const { createStudent,getAllStudents, getStudentById, updateStudent, deleteStudent } = require('./student.service');
+
+// Teacher services
+const { createTeacher,getAllTeachers, getTeacherById, updateTeacher, deleteTeacher } = require('./teacher.service');
+
 // Auth services
 const { loginUser, logoutUser } = require('./auth.service');
 
@@ -28,4 +34,16 @@ module.exports = {
   // Auth
   loginUser,
   logoutUser,
+  // Student
+  createStudent,
+  getStudentById,
+  updateStudent,
+  deleteStudent,
+  getAllStudents,
+  // Teacher
+  createTeacher,
+  getTeacherById,
+  getAllTeachers,
+  updateTeacher,
+  deleteTeacher,
 };

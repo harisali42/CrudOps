@@ -1,17 +1,4 @@
-
-
 const swaggerJsdoc = require('swagger-jsdoc');
-const Joi = require('joi');
-const joiToSwagger = require('joi-to-swagger');
-
-// Define Joi user schema directly here
-const createUserSchema = Joi.object({
-  firstName: Joi.string().min(2).max(50).required(),
-  lastName: Joi.string().min(2).max(50).required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).max(128).required(),
-  status: Joi.string().valid('active', 'non-active').default('active'),
-});
 
 const options = {
   definition: {
@@ -46,12 +33,16 @@ const options = {
         },
       },
       schemas: {
-        // Auto-generated from Joi
         User: {
-          ...joiToSwagger(createUserSchema).swagger,
+          type: 'object',
+          required: ['firstName', 'lastName', 'email', 'password'],
           properties: {
-            ...joiToSwagger(createUserSchema).swagger.properties,
             id: { type: 'integer', example: 1 },
+            firstName: { type: 'string', minLength: 2, maxLength: 50 },
+            lastName: { type: 'string', minLength: 2, maxLength: 50 },
+            email: { type: 'string', format: 'email' },
+            password: { type: 'string', minLength: 6, maxLength: 128 },
+            status: { type: 'string', enum: ['active', 'non-active'], default: 'active' },
             isActive: { type: 'boolean', example: true },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },

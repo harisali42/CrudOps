@@ -1,5 +1,3 @@
-
-
 const { StatusCodes } = require('http-status-codes');
 const Joi = require('joi');
 const { createUser: createUserService } = require('../../services');

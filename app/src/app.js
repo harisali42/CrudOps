@@ -50,6 +50,9 @@ routes.healthRoutes(app);
 app.use('/api/v1/users', routes.userRoutes);
 app.use('/api/v1/roles', routes.roleRoutes);
 app.use('/api/v1/auth', routes.authRoutes);
+app.use('/api/v1/students', routes.studentRoutes);
+app.use('/api/v1/teachers', routes.teacherRoutes);
+
 
 // 404 handler & Global error handler (must be last)
 app.use(notFoundHandler);
