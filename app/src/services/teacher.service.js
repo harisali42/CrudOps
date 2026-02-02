@@ -1,4 +1,4 @@
-const { Teacher, User, UserRole, Role, Course, Class, TeacherClass, TeacherCourse } = require('../models');
+const { Teacher, User, UserRole, Role, Course, Class, TeacherClass, TeacherCourse, Department } = require('../models');
 const { getPagination, getPagingData } = require('../utils/pagination');
 const { ROLE } = require('../constants/enums');
 
@@ -54,12 +54,16 @@ async function getAllTeachers(page = 0, size = 10) {
   const { limit, offset } = getPagination(page, size);
 
   const { count, rows } = await Teacher.findAndCountAll({
-    attributes: ['id', 'employeeId', 'department', 'createdAt', 'updatedAt'],
+    attributes: ['id', 'employeeId', 'departmentId', 'createdAt', 'updatedAt'],
     limit,
     offset,
     distinct: true,
     order: [['createdAt', 'DESC']],
     include: [
+      {
+        model: Department,
+        attributes: ['id', 'name', 'code'],
+      },
       {
         model: TeacherCourse,
         include: [
@@ -95,6 +99,10 @@ async function getAllTeachers(page = 0, size = 10) {
   const items = rows.map(teacher => {
     const t = teacher.toJSON();
     
+    // Flatten Department
+    t.department_name = t.Department ? t.Department.name : null;
+    delete t.Department;
+
     // Map Courses
     t.courses = t.TeacherCourses
       ? t.TeacherCourses.map(tc => tc.Course).filter(Boolean)
@@ -127,8 +135,12 @@ async function getAllTeachers(page = 0, size = 10) {
 // Get teacher by ID with user roles
 async function getTeacherById(id) {
   const teacher = await Teacher.findByPk(id, {
-    attributes: ['id', 'employeeId', 'department', 'createdAt', 'updatedAt'],
+    attributes: ['id', 'employeeId', 'departmentId', 'createdAt', 'updatedAt'],
     include: [
+      {
+        model: Department,
+        attributes: ['id', 'name', 'code'],
+      },
       {
         model: TeacherCourse,
         include: [
@@ -165,6 +177,10 @@ async function getTeacherById(id) {
 
   const t = teacher.toJSON();
   
+  // Flatten Department
+  t.department_name = t.Department ? t.Department.name : null;
+  delete t.Department;
+
   // Map Courses
   t.courses = t.TeacherCourses
     ? t.TeacherCourses.map(tc => tc.Course).filter(Boolean)

@@ -31,6 +31,11 @@ const Student = sequelize.define('Student', {
     allowNull: true,
   },
 
+  departmentId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+
 }, {
   tableName: 'students',
   timestamps: true,

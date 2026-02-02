@@ -27,6 +27,14 @@ const getAllStudents = require('./student/getAll');
 const getStudentById = require('./student/getById');
 const updateStudent = require('./student/update');
 const deleteStudent = require('./student/delete');
+// Department controllers
+const createDepartment = require('./department/create');
+const getAllDepartments = require('./department/getAll');
+const getDepartmentById = require('./department/getById');
+const updateDepartment = require('./department/update');
+const deleteDepartment = require('./department/delete');
+const assignStudentToDepartment = require('./department/assignStudent');
+const assignTeacherToDepartment = require('./department/assignTeacher');
 
 // Class controllers
 const createClass = require('./class/create');
@@ -62,6 +70,14 @@ module.exports = {
   getUserById,
   updateUser,
   deleteUser,
+  // Department
+  createDepartment,
+  getAllDepartments,
+  getDepartmentById,
+  updateDepartment,
+  deleteDepartment,
+  assignStudentToDepartment,
+  assignTeacherToDepartment,
   // Role
   createRole,
   getAllRoles,

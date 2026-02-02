@@ -12,6 +12,7 @@ const Course = require('./course.model');
 const StudentCourse = require('./studentCourse.model');
 const TeacherCourse = require('./teacherCourse.model');
 const TeacherClass = require('./teacherClass.model');
+const Department = require('./department.model');
 
 // User → Role (Many-to-Many through UserRole)
 User.hasMany(UserRole, { foreignKey: 'userId' });
@@ -57,6 +58,16 @@ TeacherClass.belongsTo(Teacher, { foreignKey: 'teacherId' });
 Class.hasMany(TeacherClass, { foreignKey: 'classId' });
 TeacherClass.belongsTo(Class, { foreignKey: 'classId' });
 
+// Department Relationships
+Department.hasMany(Student, { foreignKey: 'departmentId' });
+Student.belongsTo(Department, { foreignKey: 'departmentId' });
+
+Department.hasMany(Teacher, { foreignKey: 'departmentId' });
+Teacher.belongsTo(Department, { foreignKey: 'departmentId' });
+
+Department.hasMany(Course, { foreignKey: 'departmentId' });
+Course.belongsTo(Department, { foreignKey: 'departmentId' });
+
 
 const models = {
   sequelize,
@@ -71,6 +82,7 @@ const models = {
   StudentCourse,
   TeacherCourse,
   TeacherClass,
+  Department,
 };
 
 module.exports = models;

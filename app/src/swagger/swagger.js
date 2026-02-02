@@ -100,6 +100,17 @@ const options = {
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
+        Department: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            name: { type: 'string', example: 'Computer Science' },
+            code: { type: 'string', example: 'CS' },
+            description: { type: 'string', example: 'Computer Science Department' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
         LoginRequest: {
           type: 'object',
           required: ['email', 'password'],

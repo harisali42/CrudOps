@@ -1,4 +1,4 @@
-const { Student, User, UserRole, Role, Class, Course, StudentCourse } = require('../models');
+const { Student, User, UserRole, Role, Class, Course, StudentCourse, Department } = require('../models');
 const { getPagination, getPagingData } = require('../utils/pagination');
 const { ROLE } = require('../constants/enums');
 
@@ -54,19 +54,24 @@ async function getAllStudents(page = 0, size = 10) {
   const { limit, offset } = getPagination(page, size);
 
   const { count, rows } = await Student.findAndCountAll({
-    attributes: ['id', 'rollNo', 'admissionDate', 'createdAt', 'updatedAt', 'classId'],
+    attributes: ['id', 'rollNo', 'admissionDate', 'createdAt', 'updatedAt', 'departmentId','classId'],
     limit,
     offset,
     distinct: true,
     order: [['createdAt', 'DESC']],
     include: [
+       // Join 0: Department (BelongsTo)
+      {
+        model: Department,
+        attributes: ['name'],
+      },
        // Join 1: Get the Class details (One-to-Many)
       {
         model: Class,
         attributes: ['name'],
       },
       {
-        // Join 2: Get Enrolled Courses (Explicit Junction)
+        // Join 2: Get Enrolled Courses
         model: StudentCourse,
         include: [
           {
@@ -95,10 +100,14 @@ async function getAllStudents(page = 0, size = 10) {
   // Flatten roles
   const items = rows.map(student => {
     const s = student.toJSON();
-    
+
     // Flatten Class
     s.class_name = s.Class ? s.Class.name : null;
     delete s.Class;
+
+    // Flatten Department
+    s.department_name = s.Department ? s.Department.name : null;
+    delete s.Department;
     
     // Map Courses
     s.courses = s.StudentCourses 
@@ -126,8 +135,12 @@ async function getAllStudents(page = 0, size = 10) {
 // Get student by ID with user roles
 async function getStudentById(id) {
   const student = await Student.findByPk(id, {
-    attributes: ['id', 'rollNo', 'admissionDate', 'createdAt', 'updatedAt', 'classId'],
+    attributes: ['id', 'rollNo', 'admissionDate', 'createdAt', 'updatedAt', 'classId', 'departmentId'],
     include: [
+      {
+        model: Department,
+        attributes: ['id', 'name', 'code'],
+      },
       {
         model: Class,
         attributes: ['name'],
@@ -162,6 +175,10 @@ async function getStudentById(id) {
   // Flatten Class
   s.class_name = s.Class ? s.Class.name : null;
   delete s.Class;
+
+  // Flatten Department
+  s.department_name = s.Department ? s.Department.name : null;
+  delete s.Department;
 
   // Map Courses
   s.courses = s.StudentCourses 

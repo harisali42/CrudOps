@@ -21,8 +21,8 @@ const Teacher = sequelize.define('Teacher', {
     unique: true,
   },
 
-  department: {
-    type: DataTypes.STRING(100),
+  departmentId: {
+    type: DataTypes.INTEGER,
     allowNull: true,
   },
 

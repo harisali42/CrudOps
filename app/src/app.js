@@ -54,6 +54,7 @@ app.use('/api/v1/students', routes.studentRoutes);
 app.use('/api/v1/teachers', routes.teacherRoutes);
 app.use('/api/v1/classes', routes.classRoutes);
 app.use('/api/v1/courses', routes.courseRoutes);
+app.use('/api/v1/departments', routes.departmentRoutes);
 
 
 // 404 handler & Global error handler (must be last)
