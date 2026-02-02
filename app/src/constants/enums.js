@@ -31,6 +31,8 @@ exports.ROLE = {
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
   USER: 'USER',
+  STUDENT: 'STUDENT',
+  TEACHER: 'TEACHER',
 };
 
 // Get all valid values from enum

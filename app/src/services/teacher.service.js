@@ -1,18 +1,52 @@
-const { Teacher, User, UserRole, Role } = require('../models');
+const { Teacher, User, UserRole, Role, Course, Class, TeacherClass, TeacherCourse } = require('../models');
 const { getPagination, getPagingData } = require('../utils/pagination');
+const { ROLE } = require('../constants/enums');
 
 // Create teacher
 async function createTeacher(data) {
-  const { userId, employeeNumber, hireDate, resignationDate } = data;
-  if (!userId || !employeeNumber || !hireDate) {
-    return { success: false, message: 'userId, employeeNumber, and hireDate are required' };
+  const { userId, employeeId, department } = data;
+  if (!userId || !employeeId) {
+    return { success: false, message: 'userId and employeeId are required' };
   }
 
-  const existing = await Teacher.findOne({ where: { userId } });
-  if (existing) return { success: false, message: 'Teacher already exists for this user' };
+  const existing = await Teacher.findOne({ where: { userId }, paranoid: false });
+  if (existing) {
+    if (existing.deletedAt) {
+      return { success: false, message: 'Teacher profile was deleted previously. Please contact admin to restore.' };
+    }
+    return { success: false, message: 'Teacher profile already exists for this user' };
+  }
 
-  const teacher = await Teacher.create({ userId, employeeNumber, hireDate, resignationDate });
-  return { success: true, message: 'Teacher created', data: teacher };
+  const existingEmployeeId = await Teacher.findOne({ where: { employeeId }, paranoid: false });
+  if (existingEmployeeId) {
+    if (existingEmployeeId.deletedAt) {
+      return { success: false, message: 'This Employee ID belongs to a deleted teacher.' };
+    }
+    return { success: false, message: 'Teacher with this Employee ID already exists' };
+  }
+
+  // Generate teacher transaction
+  const result = await Teacher.sequelize.transaction(async (t) => {
+    // 1. Create Teacher profile 
+    const teacher = await Teacher.create({ userId, employeeId, department }, { transaction: t });
+
+    // 2. Find or Create TEACHER role
+    const [teacherRole] = await Role.findOrCreate({ 
+      where: { name: ROLE.TEACHER },
+      defaults: { description: 'Teacher Role' },
+      transaction: t
+    });
+
+    // 3. Assign TEACHER role to User
+    await UserRole.findOrCreate({
+      where: { userId, roleId: teacherRole.id },
+      transaction: t
+    });
+
+    return teacher;
+  });
+
+  return { success: true, message: 'Teacher created', data: result };
 }
 
 // Get all teachers with user info and roles
@@ -20,11 +54,30 @@ async function getAllTeachers(page = 0, size = 10) {
   const { limit, offset } = getPagination(page, size);
 
   const { count, rows } = await Teacher.findAndCountAll({
-    attributes: ['id', 'employeeNumber', 'hireDate', 'resignationDate', 'createdAt', 'updatedAt'],
+    attributes: ['id', 'employeeId', 'department', 'createdAt', 'updatedAt'],
     limit,
     offset,
+    distinct: true,
     order: [['createdAt', 'DESC']],
     include: [
+      {
+        model: TeacherCourse,
+        include: [
+          {
+            model: Course,
+            attributes: ['id', 'name', 'code'],
+          }
+        ]
+      },
+      {
+        model: TeacherClass,
+        include: [
+          {
+            model: Class,
+            attributes: ['id', 'name'],
+          }
+        ]
+      },
       {
         model: User,
         attributes: ['id', 'firstName', 'lastName', 'email', 'status'],
@@ -41,8 +94,22 @@ async function getAllTeachers(page = 0, size = 10) {
 
   const items = rows.map(teacher => {
     const t = teacher.toJSON();
+    
+    // Map Courses
+    t.courses = t.TeacherCourses
+      ? t.TeacherCourses.map(tc => tc.Course).filter(Boolean)
+      : [];
+    delete t.TeacherCourses;
+
+    // Map Classes
+    t.classes = t.TeacherClasses
+      ? t.TeacherClasses.map(tc => tc.Class).filter(Boolean)
+      : [];
+    delete t.TeacherClasses;
+
     if (t.User && t.User.UserRoles) {
       t.roles = t.User.UserRoles.map(ur => ur.Role && ur.Role.name).filter(Boolean);
+      delete t.User.UserRoles;
     } else {
       t.roles = [];
     }
@@ -60,8 +127,26 @@ async function getAllTeachers(page = 0, size = 10) {
 // Get teacher by ID with user roles
 async function getTeacherById(id) {
   const teacher = await Teacher.findByPk(id, {
-    attributes: ['id', 'employeeNumber', 'hireDate', 'resignationDate', 'createdAt', 'updatedAt'],
+    attributes: ['id', 'employeeId', 'department', 'createdAt', 'updatedAt'],
     include: [
+      {
+        model: TeacherCourse,
+        include: [
+          {
+            model: Course,
+            attributes: ['id', 'name', 'code'],
+          }
+        ]
+      },
+      {
+        model: TeacherClass,
+        include: [
+          {
+            model: Class,
+            attributes: ['id', 'name'],
+          }
+        ]
+      },
       {
         model: User,
         attributes: ['id', 'firstName', 'lastName', 'email', 'status'],
@@ -79,9 +164,25 @@ async function getTeacherById(id) {
   if (!teacher) return { success: false, message: 'Teacher not found' };
 
   const t = teacher.toJSON();
+  
+  // Map Courses
+  t.courses = t.TeacherCourses
+    ? t.TeacherCourses.map(tc => tc.Course).filter(Boolean)
+    : [];
+  delete t.TeacherCourses;
+
+  // Map Classes
+  t.classes = t.TeacherClasses
+    ? t.TeacherClasses.map(tc => tc.Class).filter(Boolean)
+    : [];
+  delete t.TeacherClasses;
+
   t.roles = t.User && t.User.UserRoles
     ? t.User.UserRoles.map(ur => ur.Role && ur.Role.name).filter(Boolean)
     : [];
+  
+  if (t.User) delete t.User.UserRoles;
+
   t.user = t.User || null;
   delete t.User;
 
@@ -90,11 +191,11 @@ async function getTeacherById(id) {
 
 // Update teacher
 async function updateTeacher(data) {
-  const { id, employeeNumber, hireDate, resignationDate } = data;
+  const { id, employeeId, department } = data;
   const teacher = await Teacher.findByPk(id);
   if (!teacher) return { success: false, message: 'Teacher not found' };
 
-  await teacher.update({ employeeNumber, hireDate, resignationDate });
+  await teacher.update({ employeeId, department });
   return { success: true, message: 'Teacher updated', data: teacher };
 }
 

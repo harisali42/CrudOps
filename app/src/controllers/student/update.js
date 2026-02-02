@@ -8,13 +8,14 @@ const schema = Joi.object().keys({
   id: Joi.number().integer().required(),
   rollNo: Joi.string().optional(),
   admissionDate: Joi.date().optional(),
+  classId: Joi.number().integer().optional(),
 });
 
 module.exports = async function updateStudent(req, res, next) {
   try {
-    // Only allow id, rollNo, and admissionDate in the update body
-    const { id, rollNo, admissionDate } = req.body;
-    const validatedData = await schema.validateAsync({ id, rollNo, admissionDate }, { abortEarly: false });
+    // Only allow id, rollNo, admissionDate, and classId in the update body
+    const { id, rollNo, admissionDate, classId } = req.body;
+    const validatedData = await schema.validateAsync({ id, rollNo, admissionDate, classId }, { abortEarly: false });
 
     const result = await updateStudentService(validatedData);
 

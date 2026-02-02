@@ -22,7 +22,8 @@ const errorHandler = (err, req, res, next) => {
 
   // Sequelize unique constraint errors
   if (err.name === 'SequelizeUniqueConstraintError') {
-    return sendResponse(res, 409, false, 'Resource already exists');
+    const fields = Object.keys(err.fields).join(', ');
+    return sendResponse(res, 409, false, `Resource already exists: ${fields}`);
   }
 
   // JWT errors

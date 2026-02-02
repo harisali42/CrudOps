@@ -5,4 +5,6 @@ module.exports = {
   healthRoutes: require('./health.routes'),
   studentRoutes: require('./student.routes'),
   teacherRoutes: require('./teacher.routes'),
+  classRoutes: require('./class.routes'),
+  courseRoutes: require('./course.routes'),
 };

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./src/bin/www",
-    "dev": "nodemon ./src/bin/www"
+    "dev": "nodemon ./src/bin/www",
+    "seed": "node src/seed/initAdmin.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

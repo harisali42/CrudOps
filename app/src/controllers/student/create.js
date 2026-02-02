@@ -8,6 +8,7 @@ const schema = Joi.object().keys({
   userId: Joi.number().integer().required(), // linking student to existing user
   rollNo: Joi.string().required(),
   admissionDate: Joi.date().required(),
+  classId: Joi.number().integer().optional(),
   leaveDate: Joi.date().optional(),
 });
 

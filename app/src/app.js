@@ -52,6 +52,8 @@ app.use('/api/v1/roles', routes.roleRoutes);
 app.use('/api/v1/auth', routes.authRoutes);
 app.use('/api/v1/students', routes.studentRoutes);
 app.use('/api/v1/teachers', routes.teacherRoutes);
+app.use('/api/v1/classes', routes.classRoutes);
+app.use('/api/v1/courses', routes.courseRoutes);
 
 
 // 404 handler & Global error handler (must be last)

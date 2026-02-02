@@ -6,7 +6,7 @@ const initDatabase = async () => {
     await sequelize.authenticate();
     logger.info('Database connected successfully');
 
-    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    await sequelize.sync({ alter: false });
     logger.info('Models synced');
 
     const tables = await sequelize.getQueryInterface().showAllTables();

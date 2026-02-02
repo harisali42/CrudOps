@@ -5,9 +5,8 @@ const { sendResponse } = require('../../utils/response');
 
 const schema = Joi.object({
   id: Joi.number().integer().required(),
-  employeeNumber: Joi.string().optional(),
-  hireDate: Joi.date().optional(),
-  resignationDate: Joi.date().optional(),
+  employeeId: Joi.string().optional(),
+  department: Joi.string().optional(),
 });
 
 module.exports = async function updateTeacher(req, res, next) {

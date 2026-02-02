@@ -14,28 +14,32 @@ const { ROLE } = require('../constants/enums');
 
 
     // Step 1: Create ADMIN role if not exists
-    const adminRoleResult = await require('../services/role/create')({ name: 'ADMIN', description: 'System Administrator' });
-    if (adminRoleResult.success) {
-      console.log('ADMIN role created/found');
+    let adminRole = await Role.findOne({ where: { name: 'ADMIN' } });
+    if (!adminRole) {
+      adminRole = await Role.create({ name: 'ADMIN', description: 'System Administrator' });
+      console.log('ADMIN role created');
     } else {
       logger.info('ADMIN role already exists');
     }
 
     // Step 2: Create USER role if not exists (optional)
-    const userRoleResult = await require('../services/role/create')({ name: 'USER', description: 'Regular User' });
-    if (userRoleResult.success) {
-      console.log('✅ USER role created/found');
+    let userRole = await Role.findOne({ where: { name: 'USER' } });
+    if (!userRole) {
+      userRole = await Role.create({ name: 'USER', description: 'Regular User' });
+      console.log('✅ USER role created');
     } else {
       logger.info('USER role already exists');
     }
 
     // Step 2b: Create MANAGER role if not exists
-    const managerRoleResult = await require('../services/role/create')({ name: ROLE.MANAGER, description: 'Team Manager' });
-    if (managerRoleResult.success) {
-      logger.info('✅ MANAGER role created/found');
+    let managerRole = await Role.findOne({ where: { name: ROLE.MANAGER } });
+    if (!managerRole) {
+      managerRole = await Role.create({ name: ROLE.MANAGER, description: 'Team Manager' });
+      logger.info('✅ MANAGER role created');
     } else {
       logger.info('MANAGER role already exists');
     }
+
 
     // Step 3: Create first admin user
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
@@ -47,18 +51,19 @@ const { ROLE } = require('../constants/enums');
     if (!adminUser) {
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
       adminUser = await User.create({
-        name: adminName,
+        firstName: adminName,
+        lastName: 'Admin',
         email: adminEmail,
         password: hashedPassword,
-        isActive: true,
+        status: 'active',
       });
-      logger.info(`✅ Admin user created: ${adminEmail}`);
+      logger.info(`✅ Admin user created: ${adminEmail} (password: ${adminPassword})`);
     } else {
       logger.info(`ℹ️  Admin user already exists: ${adminEmail}`);
     }
 
     // Step 4: Assign ADMIN role to user
-    const adminRoleId = adminRoleResult.data ? adminRoleResult.data.id : (await Role.findOne({ where: { name: 'ADMIN' } })).id;
+    const adminRoleId = adminRole.id;
     const [assignment, created] = await UserRole.findOrCreate({
       where: {
         userId: adminUser.id,

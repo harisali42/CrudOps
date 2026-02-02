@@ -75,6 +75,31 @@ const options = {
             },
           },
         },
+        Class: {
+          type: 'object',
+          required: ['name', 'roomNumber', 'capacity'],
+          properties: {
+            id: { type: 'integer', example: 1 },
+            name: { type: 'string', example: 'Grade 10-A' },
+            roomNumber: { type: 'string', example: '101' },
+            capacity: { type: 'integer', example: 30 },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Course: {
+          type: 'object',
+          required: ['name', 'code', 'credits'],
+          properties: {
+            id: { type: 'integer', example: 1 },
+            name: { type: 'string', example: 'Mathematics' },
+            code: { type: 'string', example: 'MTH-101' },
+            description: { type: 'string', example: 'Basic Mathematics' },
+            credits: { type: 'integer', example: 3 },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
         LoginRequest: {
           type: 'object',
           required: ['email', 'password'],
@@ -112,6 +137,13 @@ const options = {
                 user: {
                   $ref: '#/components/schemas/User',
                 },
+                roles: {
+                    type: 'array',
+                    items: {
+                        type: 'string',
+                        example: 'ADMIN'
+                    }
+                }
               },
             },
           },

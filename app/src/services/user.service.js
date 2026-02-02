@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const { User, Role, UserRole } = require('../models');
-const { getEnumValues } = require('../constants/enums');
+const { getEnumValues, ROLE } = require('../constants/enums');
 const { getPagination, getPagingData } = require('../utils/pagination');
 
 // Create user
@@ -19,17 +19,36 @@ async function createUser(userData) {
       message: 'Email already exists',
     };
   }
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = await User.create({
-    firstName,
-    lastName,
-    email,
-    password: hashedPassword,
+
+  // Transaction for User + Default Role
+  const result = await User.sequelize.transaction(async (t) => {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+    }, { transaction: t });
+
+    // Assign default USER role
+    const [defaultRole] = await Role.findOrCreate({ 
+        where: { name: ROLE.USER },
+        defaults: { description: 'Regular User' },
+        transaction: t
+    });
+
+    await UserRole.create({
+        userId: newUser.id,
+        roleId: defaultRole.id
+    }, { transaction: t });
+
+    return newUser;
   });
+
   return {
     success: true,
     message: 'User created successfully',
-    data: newUser
+    data: result
   };
 }
 
@@ -37,6 +56,7 @@ async function createUser(userData) {
 async function getAllUsers(page = 0, size = 10) {
 const { limit, offset } = getPagination(page, size);
   const { count, rows } = await User.findAndCountAll({
+  distinct: true,
   attributes: { exclude: ['password'] },
   limit,
   offset,
@@ -142,7 +162,15 @@ async function assignRole(userId, roleName) {
       return { success: false, message: 'Role already assigned to user' };
     }
     const userRole = await UserRole.create({ userId: user.id, roleId: role.id });
-    return { success: true, message: 'Role assigned successfully', data: { user, role, userRole } };
+    return { 
+      success: true, 
+      message: 'Role assigned successfully', 
+      data: { 
+        userId: user.id, 
+        role: role.name,
+        assignedAt: userRole.createdAt
+      } 
+    };
   } catch (error) {
     return { success: false, message: error.message };
   }
@@ -160,7 +188,14 @@ async function removeRole(userId, roleName) {
   if (!role) return { success: false, message: 'Role not found' };
   const deleted = await UserRole.destroy({ where: { userId: user.id, roleId: role.id } });
   if (!deleted) return { success: false, message: 'Role assignment not found' };
-  return { success: true, data: { user, role } };
+  return { 
+    success: true, 
+    message: 'Role removed successfully',
+    data: { 
+      userId: user.id, 
+      role: role.name 
+    } 
+  };
 }
 
 // Get all roles for a user

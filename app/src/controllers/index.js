@@ -28,6 +28,24 @@ const getStudentById = require('./student/getById');
 const updateStudent = require('./student/update');
 const deleteStudent = require('./student/delete');
 
+// Class controllers
+const createClass = require('./class/create');
+const getAllClasses = require('./class/getAll');
+const getClassById = require('./class/getById');
+const updateClass = require('./class/update');
+const deleteClass = require('./class/delete');
+const assignStudentToClass = require('./class/assignStudent');
+const assignTeacherToClass = require('./class/assignTeacher');
+
+// Course controllers
+const createCourse = require('./course/create');
+const getAllCourses = require('./course/getAll');
+const getCourseById = require('./course/getById');
+const updateCourse = require('./course/update');
+const deleteCourse = require('./course/delete');
+const enrollStudent = require('./course/enrollStudent');
+const assignTeacherToCourse = require('./course/assignTeacher');
+
 // Auth controllers
 const loginUser = require('./auth/login');
 const logoutUser = require('./auth/logout');
@@ -69,4 +87,20 @@ module.exports = {
   getStudentById,
   updateStudent,
   deleteStudent,
+  // Class
+  createClass,
+  getAllClasses,
+  getClassById,
+  updateClass,
+  deleteClass,
+  assignStudentToClass,
+  assignTeacherToClass,
+  // Course
+  createCourse,
+  getAllCourses,
+  getCourseById,
+  updateCourse,
+  deleteCourse,
+  enrollStudent,
+  assignTeacherToCourse,
 };

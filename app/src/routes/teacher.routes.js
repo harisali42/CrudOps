@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/auth.middleware');
+const { authorize } = require('../middlewares/role.middleware');
 const {
   createTeacher,
   getAllTeachers,
@@ -10,7 +11,7 @@ const {
 } = require('../controllers');
 
 // Create a new teacher
-router.post('/', authenticate, createTeacher);
+router.post('/', authenticate, authorize('ADMIN'), createTeacher);
 
 // Get all teachers with pagination
 router.get('/', authenticate, getAllTeachers);
@@ -19,9 +20,9 @@ router.get('/', authenticate, getAllTeachers);
 router.get('/:id', authenticate, getTeacherById);
 
 // Update teacher by ID
-router.put('/:id', authenticate, updateTeacher);
+router.put('/:id', authenticate, authorize('ADMIN'), updateTeacher);
 
 // Delete teacher by ID
-router.delete('/:id', authenticate, deleteTeacher);
+router.delete('/:id', authenticate, authorize('ADMIN'), deleteTeacher);
 
 module.exports = router;

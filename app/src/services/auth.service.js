@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { User, Session } = require('../models');
+const { User, Session, UserRole, Role } = require('../models');
 const { generateToken } = require('../config/jwt');
 
 // Login user
@@ -7,7 +7,15 @@ async function loginUser(email, password) {
   if (!email || !password) {
     return { success: false, message: 'Email and password are required' };
   }
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ 
+    where: { email },
+    include: [
+      {
+        model: UserRole,
+        include: [{ model: Role, attributes: ['name'] }]
+      }
+    ]
+  });
   if (!user) {
     return { success: false, message: 'Invalid credentials' };
   }
@@ -18,10 +26,18 @@ async function loginUser(email, password) {
   if (user.status !== 'active') {
     return { success: false, message: 'User is inactive' };
   }
+  
+  // Extract roles
+  const roles = user.UserRoles 
+    ? user.UserRoles.map(ur => ur.Role && ur.Role.name).filter(Boolean)
+    : [];
+
   // Create session first
   const session = await Session.create({ userId: user.id });
-  // Generate token with userId + sessionId
-  const token = generateToken({ userId: user.id, sessionId: session.id });
+  // Generate token with userId + sessionId + roles
+  const token = generateToken({ userId: user.id, sessionId: session.id, roles });
+
+
   return {
     success: true,
     data: {
@@ -32,6 +48,7 @@ async function loginUser(email, password) {
         firstName: user.firstName,
         lastName: user.lastName,
         status: user.status,
+        roles, // Return roles to frontend
       },
       sessionId: session.id,
     },
