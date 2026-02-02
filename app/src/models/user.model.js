@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const { USER_TYPE } = require('../constants/enums');
 
 const User = sequelize.define('User', {
   id: {
@@ -34,6 +35,11 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
   
+  userType: {
+    type: DataTypes.ENUM(...Object.values(USER_TYPE)),
+    defaultValue: USER_TYPE.GENERAL,
+    allowNull: false,
+  },
 
 }, {
   tableName: 'users',

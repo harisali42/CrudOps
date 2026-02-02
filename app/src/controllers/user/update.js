@@ -4,6 +4,7 @@ const { StatusCodes } = require('http-status-codes');
 const Joi = require('joi');
 const { updateUser: updateUserService } = require('../../services');
 const { sendResponse } = require('../../utils/response');
+const { USER_TYPE, getEnumValues } = require('../../constants/enums');
 
 const paramsSchema = Joi.object().keys({
   id: Joi.number().required(),
@@ -13,6 +14,7 @@ const bodySchema = Joi.object().keys({
   firstName: Joi.string().optional(),
   lastName: Joi.string().optional(),
   status: Joi.string().optional(),
+  userType: Joi.string().valid(...getEnumValues(USER_TYPE)).optional(),
 });
 
 module.exports = async function updateUser(req, res, next) {

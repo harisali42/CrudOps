@@ -5,7 +5,7 @@ const { getPagination, getPagingData } = require('../utils/pagination');
 
 // Create user
 async function createUser(userData) {
-  const { firstName, lastName, email, password } = userData;
+  const { firstName, lastName, email, password, userType } = userData;
   if (!firstName || !lastName || !email || !password) {
     return {
       success: false,
@@ -28,6 +28,7 @@ async function createUser(userData) {
       lastName,
       email,
       password: hashedPassword,
+      userType,
     }, { transaction: t });
 
     // Assign default USER role
@@ -123,12 +124,12 @@ async function getUserById(id) {
 
 // Update user
 async function updateUser(data) {
-  const { id, firstName, lastName, status } = data;
+  const { id, firstName, lastName, status, userType } = data;
   const user = await User.findByPk(id);
   if (!user) {
     return { success: false, message: 'User not found' };
   }
-  await user.update({ firstName, lastName, status });
+  await user.update({ firstName, lastName, status, userType });
   return { success: true, message: 'User updated', data: user };
 }
 

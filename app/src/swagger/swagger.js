@@ -43,6 +43,7 @@ const options = {
             email: { type: 'string', format: 'email' },
             password: { type: 'string', minLength: 6, maxLength: 128 },
             status: { type: 'string', enum: ['active', 'non-active'], default: 'active' },
+            userType: { type: 'string', enum: ['General', 'Science', 'Arts', 'Pre-Engineering', 'Pre-Medical', 'ICS', 'Commerce'], default: 'General' },
             isActive: { type: 'boolean', example: true },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },

@@ -24,11 +24,15 @@
  *             required:
  *               - name
  *               - code
+ *               - type
  *             properties:
  *               name:
  *                 type: string
  *               code:
  *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [Science, Arts, Pre-Engineering, Pre-Medical, ICS, Commerce, Other]
  *               description:
  *                 type: string
  *     responses:

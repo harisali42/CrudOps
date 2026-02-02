@@ -2,12 +2,14 @@ const { StatusCodes } = require('http-status-codes');
 const Joi = require('joi');
 const { createUser: createUserService } = require('../../services');
 const { sendResponse } = require('../../utils/response');
+const { USER_TYPE, getEnumValues } = require('../../constants/enums');
 
 const schema = Joi.object().keys({
   firstName: Joi.string().required(),
   lastName: Joi.string().required(),
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
+  userType: Joi.string().valid(...getEnumValues(USER_TYPE)).optional(),
 });
 
 module.exports = async function createUser(req, res, next) {
