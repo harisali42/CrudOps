@@ -6,7 +6,9 @@ const initDatabase = async () => {
     await sequelize.authenticate();
     logger.info('Database connected successfully');
 
-    await sequelize.sync({ alter: true });
+    // Use force: false to avoid altering existing tables and creating duplicate indexes
+    // Only use alter: true in development when needed, or use migrations
+    await sequelize.sync({ force: false });
     logger.info('Models synced');
 
     const tables = await sequelize.getQueryInterface().showAllTables();

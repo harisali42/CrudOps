@@ -41,6 +41,10 @@ app.use(compression());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'CrudOps API Documentation',
+  swaggerOptions: {
+    docExpansion: 'none', // Collapse all dropdowns by default
+    defaultModelsExpandDepth: -1, // Hide schemas section at the bottom
+  },
 }));
 
 // Health check endpoint
