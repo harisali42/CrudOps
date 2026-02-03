@@ -55,41 +55,76 @@ async function createUser(userData) {
 
 // Get all users (with roles)
 async function getAllUsers(page = 0, size = 10) {
-const { limit, offset } = getPagination(page, size);
-  const { count, rows } = await User.findAndCountAll({
-  distinct: true,
-  attributes: { exclude: ['password'] },
-  limit,
-  offset,
-  order: [['createdAt', 'DESC']],
-  include: [
-      {
-        model: UserRole,          
-        attributes: ['id', 'roleId'], 
-        include: [
-          {
-            model: Role,            
-            attributes: ['id', 'name']
-          }
-        ]
-      }
-    ]
+  const limit = size;
+  const offset = page * size;
+
+  const query = `
+    SELECT
+      u.id,
+      u.firstName,
+      u.lastName,
+      u.email,
+      u.userType,
+      u.status,
+      u.createdAt,
+      u.updatedAt,
+      r.name AS roleName
+    FROM users u
+    LEFT JOIN user_roles ur ON ur.userId = u.id
+    LEFT JOIN roles r ON r.id = ur.roleId
+    ORDER BY u.createdAt DESC
+    LIMIT ${limit} OFFSET ${offset};
+  `;
+
+  const countQuery = `
+    SELECT COUNT(DISTINCT u.id) AS total
+    FROM users u;
+  `;
+
+  const usersRows = await User.sequelize.query(query, {
+    type: User.sequelize.QueryTypes.SELECT,
   });
 
-  const items = rows.map(user => {
-  const userJson = user.toJSON();
-  userJson.roles = userJson.UserRoles
-    ? userJson.UserRoles.map(ur => ur.Role.name)
-    : [];
-  delete userJson.UserRoles; 
-  return userJson;
-});
+  const countResult = await User.sequelize.query(countQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  const totalItems = countResult[0].total;
+
+  const usersMap = {};
+
+  usersRows.forEach(row => {
+    if (!usersMap[row.id]) {
+      usersMap[row.id] = {
+        id: row.id,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        userType: row.userType,
+        status: row.status,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        roles: []
+      };
+    }
+
+    if (row.roleName) {
+      usersMap[row.id].roles.push(row.roleName);
+    }
+  });
 
   return {
     success: true,
-    data: getPagingData({ count, rows: items }, page, limit),
+    data: {
+      totalItems,
+      users: Object.values(usersMap),
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit)
+    }
   };
 }
+
+
 
 // Get user by ID (with roles)
 async function getUserById(id) {
