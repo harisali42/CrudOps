@@ -315,17 +315,51 @@ async function updateUser(data) {
 }
 
 
-// Delete user
+// ---Delete user---
 async function deleteUser(id) {
-  const user = await User.findByPk(id);
-  if (!user) {
+  //  Check if user exists
+  const findUserQuery = `
+    SELECT
+      id,
+      firstName,
+      lastName,
+      email,
+      userType,
+      createdAt
+    FROM users
+    WHERE id = ${id};
+  `;
+
+  const users = await User.sequelize.query(findUserQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  if (users.length === 0) {
     return { success: false, message: 'User not found' };
   }
-  await user.destroy();
-  return { success: true, data: user };
+
+  const user = users[0];
+
+  //  Delete user
+  const deleteUserQuery = `
+    DELETE FROM users
+    WHERE id = ${id};
+  `;
+
+  await User.sequelize.query(deleteUserQuery, {
+    type: User.sequelize.QueryTypes.DELETE,
+  });
+
+  // Return deleted user data
+  return {
+    success: true,
+    data: user,
+  };
 }
 
-// Assign role to user
+
+
+// ---Assign role to user---
 async function assignRole(userId, roleName) {
   try {
     const user = await User.findByPk(userId);
