@@ -124,38 +124,58 @@ async function getAllUsers(page = 0, size = 10) {
   };
 }
 
-
-
 // Get user by ID (with roles)
 async function getUserById(id) {
-  const user = await User.findOne({
-    where: { id },
-    attributes: { exclude: ['password'] },
-    include: [
-      {
-        model: UserRole,
-        attributes: ['id', 'roleId'],
-        include: [
-          {
-            model: Role,
-            attributes: ['id', 'name']
-          }
-        ]
-      }
-    ]
+  const query = `
+    SELECT
+      u.id,
+      u.firstName,
+      u.lastName,
+      u.email,
+      u.userType,
+      u.status,
+      u.createdAt,
+      u.updatedAt,
+      r.name AS roleName
+    FROM users u
+    LEFT JOIN user_roles ur ON ur.userId = u.id
+    LEFT JOIN roles r ON r.id = ur.roleId
+    WHERE u.id = ${id};
+  `;
+
+  const rows = await User.sequelize.query(query, {
+    type: User.sequelize.QueryTypes.SELECT,
   });
-  
-  if (!user) {
+
+  if (!rows || rows.length === 0) {
     return { success: false, message: 'User not found' };
   }
-  const userJson = user.toJSON();
-  // Flatten roles from UserRoles, always map over an array
-  userJson.roles = Array.isArray(userJson.UserRoles)
-    ? userJson.UserRoles.map(ur => ur.Role && ur.Role.name).filter(Boolean)
-    : [];
-  delete userJson.UserRoles;
-  return { success: true, data: userJson };
+
+  // Build user object + roles
+  const user = {
+    id: rows[0].id,
+    firstName: rows[0].firstName,
+    lastName: rows[0].lastName,
+    email: rows[0].email,
+    userType: rows[0].userType,
+    status: rows[0].status,
+    createdAt: rows[0].createdAt,
+    updatedAt: rows[0].updatedAt,
+    roles: []
+  };
+
+  rows.forEach(row => {
+    if (row.roleName) {
+      user.roles.push(row.roleName);
+    }
+  });
+
+  return {
+    success: true,
+    data: user
+  };
 }
+
 
 // Update user
 async function updateUser(data) {
