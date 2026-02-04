@@ -60,6 +60,16 @@ app.use('/api/v1/classes', routes.classRoutes);
 app.use('/api/v1/courses', routes.courseRoutes);
 app.use('/api/v1/departments', routes.departmentRoutes);
 
+// Chat status endpoint (for monitoring)
+app.get('/api/v1/chat/status', (req, res) => {
+  const { getSystemStatus } = require('./chat/socketSetup');
+  try {
+    const status = getSystemStatus();
+    return res.json({ success: true, data: status });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // 404 handler & Global error handler (must be last)
 app.use(notFoundHandler);

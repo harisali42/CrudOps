@@ -7,6 +7,8 @@
 var app = require('../app');
 var debug = require('debug')('app:server');
 var http = require('http');
+var { initializeSocketIO, shutdownSocketIO } = require('../chat/socketSetup');
+var logger = require('../config/logger');
 
 /**
  * Get port from environment and store in Express.
@@ -22,12 +24,64 @@ app.set('port', port);
 var server = http.createServer(app);
 
 /**
+ * Initialize Socket.IO for real-time chat
+ */
+const { io, messageQueue, persistenceWorker } = initializeSocketIO(server, {
+  queueMaxSize: process.env.SOCKET_QUEUE_MAX_SIZE || 10000,
+  workerIntervalMs: process.env.SOCKET_WORKER_INTERVAL || 5000,
+  workerBatchSize: process.env.SOCKET_WORKER_BATCH_SIZE || 100,
+});
+
+logger.info('[Server] Socket.IO initialized');
+
+/**
  * Listen on provided port, on all network interfaces.
  */
 
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+
+/**
+ * Graceful shutdown handling
+ */
+process.on('SIGTERM', async () => {
+  logger.info('[Server] SIGTERM received, starting graceful shutdown...');
+  
+  try {
+    // Stop accepting new connections
+    server.close(() => {
+      logger.info('[Server] HTTP server closed');
+    });
+
+    // Shutdown Socket.IO
+    await shutdownSocketIO();
+    logger.info('[Server] Socket.IO shutdown complete');
+
+    process.exit(0);
+  } catch (error) {
+    logger.error('[Server] Shutdown error:', error.message);
+    process.exit(1);
+  }
+});
+
+process.on('SIGINT', async () => {
+  logger.info('[Server] SIGINT received, starting graceful shutdown...');
+  
+  try {
+    server.close(() => {
+      logger.info('[Server] HTTP server closed');
+    });
+
+    await shutdownSocketIO();
+    logger.info('[Server] Socket.IO shutdown complete');
+
+    process.exit(0);
+  } catch (error) {
+    logger.error('[Server] Shutdown error:', error.message);
+    process.exit(1);
+  }
+});
 
 /**
  * Normalize a port into a number, string, or false.
@@ -87,4 +141,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+  logger.info('[Server] Express + Socket.IO server running on ' + bind);
 }
