@@ -3,57 +3,133 @@ const { User, Role, UserRole } = require('../models');
 const { getEnumValues, ROLE } = require('../constants/enums');
 const { getPagination, getPagingData } = require('../utils/pagination');
 
-// Create user
+// ---Create user---
 async function createUser(userData) {
   const { firstName, lastName, email, password, userType } = userData;
+
   if (!firstName || !lastName || !email || !password) {
     return {
       success: false,
       message: 'First name, last name, email, and password are required',
     };
   }
-  const existingUser = await User.findOne({ where: { email } });
-  if (existingUser) {
+
+  //  Check if email already exists
+  const checkEmailQuery = `
+    SELECT id
+    FROM users
+    WHERE email = '${email}';
+  `;
+
+  const existingUser = await User.sequelize.query(checkEmailQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  if (existingUser.length > 0) {
     return {
       success: false,
       message: 'Email already exists',
     };
   }
 
-  // Transaction for User + Default Role
-  const result = await User.sequelize.transaction(async (t) => {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      userType,
-    }, { transaction: t });
+  //  Hash password (JS responsibility)
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Assign default USER role
-    const [defaultRole] = await Role.findOrCreate({ 
-        where: { name: ROLE.USER },
-        defaults: { description: 'Regular User' },
-        transaction: t
+  //  Start transaction
+  const transaction = await User.sequelize.transaction();
+
+  try {
+    //  Insert user
+    const insertUserQuery = `
+      INSERT INTO users
+        (firstName, lastName, email, password, userType, createdAt, updatedAt)
+      VALUES
+        ('${firstName}', '${lastName}', '${email}', '${hashedPassword}', '${userType}', NOW(), NOW());
+    `;
+
+    const insertResult = await User.sequelize.query(insertUserQuery, {
+      transaction,
+      type: User.sequelize.QueryTypes.INSERT,
     });
 
-    await UserRole.create({
-        userId: newUser.id,
-        roleId: defaultRole.id
-    }, { transaction: t });
+    const newUserId = insertResult[0];
 
-    return newUser;
-  });
+    //  Get or create default USER role
+    const roleQuery = `
+      SELECT id
+      FROM roles
+      WHERE name = '${ROLE.USER}';
+    `;
 
-  return {
-    success: true,
-    message: 'User created successfully',
-    data: result
-  };
+    let roleResult = await User.sequelize.query(roleQuery, {
+      transaction,
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    let roleId;
+
+    if (roleResult.length === 0) {
+      const insertRoleQuery = `
+        INSERT INTO roles (name, description, createdAt, updatedAt)
+        VALUES ('${ROLE.USER}', 'Regular User', NOW(), NOW());
+      `;
+
+      const roleInsertResult = await User.sequelize.query(insertRoleQuery, {
+        transaction,
+        type: User.sequelize.QueryTypes.INSERT,
+      });
+
+      roleId = roleInsertResult[0];
+    } else {
+      roleId = roleResult[0].id;
+    }
+
+    //  Assign role to user
+    const assignRoleQuery = `
+      INSERT INTO user_roles (userId, roleId, createdAt, updatedAt)
+      VALUES (${newUserId}, ${roleId}, NOW(), NOW());
+    `;
+
+    await User.sequelize.query(assignRoleQuery, {
+      transaction,
+      type: User.sequelize.QueryTypes.INSERT,
+    });
+
+    //  Commit transaction
+    await transaction.commit();
+
+    //  Fetch created user (without password)
+    const fetchUserQuery = `
+      SELECT
+        id,
+        firstName,
+        lastName,
+        email,
+        userType,
+        createdAt
+      FROM users
+      WHERE id = ${newUserId};
+    `;
+
+    const newUser = await User.sequelize.query(fetchUserQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    return {
+      success: true,
+      message: 'User created successfully',
+      data: newUser[0],
+    };
+
+  } catch (error) {
+    // Rollback on error
+    await transaction.rollback();
+    throw error;
+  }
 }
 
-// Get all users (with roles)
+
+// ---Get all users (with roles)---
 async function getAllUsers(page = 0, size = 10) {
   const limit = size;
   const offset = page * size;
@@ -124,7 +200,7 @@ async function getAllUsers(page = 0, size = 10) {
   };
 }
 
-// Get user by ID (with roles)
+// ---Get user by ID (with roles)---
 async function getUserById(id) {
   const query = `
     SELECT
@@ -177,11 +253,11 @@ async function getUserById(id) {
 }
 
 
-// Update user
+// ---Update user---
 async function updateUser(data) {
   const { id, firstName, lastName, status, userType } = data;
 
-  // 1️⃣ Check if user exists
+  //  Check if user exists
   const checkQuery = `
     SELECT id
     FROM users
@@ -196,7 +272,7 @@ async function updateUser(data) {
     return { success: false, message: 'User not found' };
   }
 
-  // 2️⃣ Update user
+  //  Update
   const updateQuery = `
     UPDATE users
     SET
@@ -212,7 +288,7 @@ async function updateUser(data) {
     type: User.sequelize.QueryTypes.UPDATE,
   });
 
-  // 3️⃣ Fetch updated user (without password)
+  // Fetch updated user (without password)
   const fetchQuery = `
     SELECT
       id,
