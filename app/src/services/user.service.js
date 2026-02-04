@@ -180,13 +180,64 @@ async function getUserById(id) {
 // Update user
 async function updateUser(data) {
   const { id, firstName, lastName, status, userType } = data;
-  const user = await User.findByPk(id);
-  if (!user) {
+
+  // 1️⃣ Check if user exists
+  const checkQuery = `
+    SELECT id
+    FROM users
+    WHERE id = ${id};
+  `;
+
+  const existingUser = await User.sequelize.query(checkQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  if (!existingUser || existingUser.length === 0) {
     return { success: false, message: 'User not found' };
   }
-  await user.update({ firstName, lastName, status, userType });
-  return { success: true, message: 'User updated', data: user };
+
+  // 2️⃣ Update user
+  const updateQuery = `
+    UPDATE users
+    SET
+      firstName = '${firstName}',
+      lastName = '${lastName}',
+      status = '${status}',
+      userType = '${userType}',
+      updatedAt = NOW()
+    WHERE id = ${id};
+  `;
+
+  await User.sequelize.query(updateQuery, {
+    type: User.sequelize.QueryTypes.UPDATE,
+  });
+
+  // 3️⃣ Fetch updated user (without password)
+  const fetchQuery = `
+    SELECT
+      id,
+      firstName,
+      lastName,
+      email,
+      status,
+      userType,
+      createdAt,
+      updatedAt
+    FROM users
+    WHERE id = ${id};
+  `;
+
+  const updatedUser = await User.sequelize.query(fetchQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  return {
+    success: true,
+    message: 'User updated',
+    data: updatedUser[0],
+  };
 }
+
 
 // Delete user
 async function deleteUser(id) {
