@@ -147,7 +147,7 @@ async function getAllUsers(page = 0, size = 10) {
       u.deletedAt,
       r.name AS roleName
     FROM users u
-    LEFT JOIN user_roles ur ON ur.userId = u.id
+    LEFT JOIN user_roles ur ON ur.userId = u.id AND ur.deletedAt IS NULL
     LEFT JOIN roles r ON r.id = ur.roleId
     ORDER BY u.createdAt DESC
     LIMIT ${limit} OFFSET ${offset};
@@ -217,7 +217,7 @@ async function getUserById(id) {
       u.deletedAt,
       r.name AS roleName
     FROM users u
-    LEFT JOIN user_roles ur ON ur.userId = u.id
+    LEFT JOIN user_roles ur ON ur.userId = u.id AND ur.deletedAt IS NULL
     LEFT JOIN roles r ON r.id = ur.roleId
     WHERE u.id = ${id};
   `;
@@ -390,11 +390,11 @@ async function assignRole(userId, roleName) {
       };
     }
 
-    /*  Get role by name */
+    /*  Get role by name (case-sensitive) */
     const roleQuery = `
       SELECT id, name
       FROM roles
-      WHERE name = '${roleName}';
+      WHERE BINARY name = '${roleName}';
     `;
 
     const roles = await User.sequelize.query(roleQuery, {
@@ -407,12 +407,13 @@ async function assignRole(userId, roleName) {
 
     const role = roles[0];
 
-    /*  Check if role already assigned */
+    /*  Check if role already assigned (excluding soft-deleted) */
     const checkAssignmentQuery = `
       SELECT id
       FROM user_roles
       WHERE userId = ${userId}
-        AND roleId = ${role.id};
+        AND roleId = ${role.id}
+        AND deletedAt IS NULL;
     `;
 
     const existing = await User.sequelize.query(checkAssignmentQuery, {
@@ -448,47 +449,127 @@ async function assignRole(userId, roleName) {
 }
 
 
-// Remove role from user
+// ---Remove role from user---
 async function removeRole(userId, roleName) {
-  const user = await User.findByPk(userId);
-  if (!user) return { success: false, message: 'User not found' };
-  const validRoles = getEnumValues(require('../constants/enums').ROLE);
-  if (!validRoles.includes(roleName)) {
-    return { success: false, message: `Invalid role. Allowed roles: ${validRoles.join(', ')}` };
+  try {
+    /* Check if user exists */
+    const userQuery = `
+      SELECT id
+      FROM users
+      WHERE id = ${userId};
+    `;
+
+    const users = await User.sequelize.query(userQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (users.length === 0) {
+      return { success: false, message: 'User not found' };
+    }
+
+    /*  Validate role name (JS-side, same as before) */
+    const validRoles = getEnumValues(require('../constants/enums').ROLE);
+    if (!validRoles.includes(roleName)) {
+      return {
+        success: false,
+        message: `Invalid role. Allowed roles: ${validRoles.join(', ')}`,
+      };
+    }
+
+    /*  Get role by name (case-sensitive) */
+    const roleQuery = `
+      SELECT id, name
+      FROM roles
+      WHERE BINARY name = '${roleName}';
+    `;
+
+    const roles = await User.sequelize.query(roleQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (roles.length === 0) {
+      return { success: false, message: 'Role not found' };
+    }
+
+    const role = roles[0];
+
+    /* Soft-delete role assignment */
+    const deleteQuery = `
+      UPDATE user_roles
+      SET deletedAt = NOW()
+      WHERE userId = ${userId}
+        AND roleId = ${role.id}
+        AND deletedAt IS NULL;
+    `;
+
+    const result = await User.sequelize.query(deleteQuery, {
+      type: User.sequelize.QueryTypes.UPDATE,
+    });
+
+    const affectedRows = typeof result === 'number'
+      ? result
+      : (result?.[1] ?? result?.[0]?.affectedRows ?? 0);
+
+    if (!affectedRows) {
+      return { success: false, message: 'Role assignment not found' };
+    }
+
+    return {
+      success: true,
+      message: 'Role removed successfully',
+      data: {
+        userId,
+        role: role.name,
+      },
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
   }
-  const role = await Role.findOne({ where: { name: roleName } });
-  if (!role) return { success: false, message: 'Role not found' };
-  const deleted = await UserRole.destroy({ where: { userId: user.id, roleId: role.id } });
-  if (!deleted) return { success: false, message: 'Role assignment not found' };
-  return { 
-    success: true, 
-    message: 'Role removed successfully',
-    data: { 
-      userId: user.id, 
-      role: role.name 
-    } 
-  };
 }
+
 
 // Get all roles for a user
 async function getUserRoles(userId) {
-  const user = await User.findByPk(userId, {
-    include: [
-      {
-        model: UserRole,
-        include: [
-          {
-            model: Role,
-            attributes: ['id', 'name']
-          }
-        ]
-      }
-    ]
-  });
-  if (!user) return { success: false, message: 'User not found' };
-  // Return array of roles
-  const roles = user.UserRoles ? user.UserRoles.map(ur => ur.Role && ur.Role.name).filter(Boolean) : [];
-  return { success: true, message: 'Roles fetched', data: roles };
+  try {
+    /*  Check if user exists */
+    const userQuery = `
+      SELECT id
+      FROM users
+      WHERE id = ${userId};
+    `;
+
+    const users = await User.sequelize.query(userQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (users.length === 0) {
+      return { success: false, message: 'User not found' };
+    }
+
+    /*  Fetch roles for the user */
+    const rolesQuery = `
+      SELECT r.name AS roleName
+      FROM user_roles ur
+      LEFT JOIN roles r ON r.id = ur.roleId
+      WHERE ur.userId = ${userId}
+        AND ur.deletedAt IS NULL;
+    `;
+
+    const rows = await User.sequelize.query(rolesQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    /*  Map roles into array */
+    const roles = rows.map(row => row.roleName).filter(Boolean);
+
+    return {
+      success: true,
+      message: 'Roles fetched',
+      data: roles,
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 }
 
 module.exports = {
