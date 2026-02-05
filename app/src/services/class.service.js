@@ -3,7 +3,7 @@ const { Class, Teacher, Student, TeacherClass } = require('../models');
 // Create class
 async function createClass(data) {
   const { name, roomNumber, capacity } = data;
-  const existing = await Class.findOne({ where: { name } });
+  const existing = await Class.findOne({ where: { name, deletedAt: null } });
   if (existing) return { success: false, message: 'Class name already exists' };
 
   const newClass = await Class.create({ name, roomNumber, capacity });

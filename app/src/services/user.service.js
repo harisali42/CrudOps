@@ -18,7 +18,7 @@ async function createUser(userData) {
   const checkEmailQuery = `
     SELECT id
     FROM users
-    WHERE email = '${email}';
+    WHERE email = '${email}' AND deletedAt IS NULL;
   `;
 
   const existingUser = await User.sequelize.query(checkEmailQuery, {
@@ -265,7 +265,7 @@ async function updateUser(data) {
   const checkQuery = `
     SELECT id
     FROM users
-    WHERE id = ${id};
+    WHERE id = ${id} AND deletedAt IS NULL;
   `;
 
   const existingUser = await User.sequelize.query(checkQuery, {
@@ -331,7 +331,7 @@ async function deleteUser(id) {
       userType,
       createdAt
     FROM users
-    WHERE id = ${id};
+    WHERE id = ${id} AND deletedAt IS NULL;
   `;
 
   const users = await User.sequelize.query(findUserQuery, {
@@ -370,7 +370,7 @@ async function assignRole(userId, roleName) {
     const userQuery = `
       SELECT id
       FROM users
-      WHERE id = ${userId};
+      WHERE id = ${userId} AND deletedAt IS NULL;
     `;
 
     const users = await User.sequelize.query(userQuery, {
@@ -456,7 +456,7 @@ async function removeRole(userId, roleName) {
     const userQuery = `
       SELECT id
       FROM users
-      WHERE id = ${userId};
+      WHERE id = ${userId} AND deletedAt IS NULL;
     `;
 
     const users = await User.sequelize.query(userQuery, {
@@ -535,7 +535,7 @@ async function getUserRoles(userId) {
     const userQuery = `
       SELECT id
       FROM users
-      WHERE id = ${userId};
+      WHERE id = ${userId} AND deletedAt IS NULL;
     `;
 
     const users = await User.sequelize.query(userQuery, {

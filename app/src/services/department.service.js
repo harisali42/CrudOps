@@ -6,7 +6,7 @@ async function createDepartment(data) {
   const { name, code } = data;
   
   // Check duplication
-  const exists = await Department.findOne({ where: { code } });
+  const exists = await Department.findOne({ where: { code, deletedAt: null } });
   if (exists) {
     return { success: false, message: 'Department code already exists' };
   }
@@ -58,7 +58,7 @@ async function updateDepartment(id, data) {
   }
 
   if (data.code && data.code !== department.code) {
-    const exists = await Department.findOne({ where: { code: data.code } });
+    const exists = await Department.findOne({ where: { code: data.code, deletedAt: null } });
     if (exists) {
       return { success: false, message: 'Department code already exists' };
     }

@@ -59,14 +59,6 @@ const Message = sequelize.define('Message', {
 }, {
   tableName: 'messages',
   timestamps: true,
-  indexes: [
-    {
-      fields: ['conversationId', 'createdAt'],
-    },
-    {
-      fields: ['senderId', 'receiverId'],
-    },
-  ],
 });
 
 module.exports = Message;

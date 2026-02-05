@@ -11,7 +11,6 @@ const Class = sequelize.define('Class', {
   name: {
     type: DataTypes.STRING(100), // e.g., "Grade 10-A"
     allowNull: false,
-    unique: true,
   },
 
   roomNumber: {

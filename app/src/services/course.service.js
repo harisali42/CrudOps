@@ -3,7 +3,7 @@ const { Course, Student, Teacher, StudentCourse, TeacherCourse } = require('../m
 // Create course
 async function createCourse(data) {
   const { name, code, description, credits } = data;
-  const existing = await Course.findOne({ where: { code } });
+  const existing = await Course.findOne({ where: { code, deletedAt: null } });
   if (existing) return { success: false, message: 'Course code already exists' };
 
   const course = await Course.create({ name, code, description, credits });
