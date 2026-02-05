@@ -1,9 +1,3 @@
-/**
- * In-Memory Message Queue
- * Stores messages temporarily before persistence
- * Zero-latency queue for real-time delivery
- */
-
 class MessageQueue {
   constructor(maxSize = 10000) {
     this.queue = [];

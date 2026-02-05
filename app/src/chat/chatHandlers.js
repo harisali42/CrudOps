@@ -1,10 +1,5 @@
-/**
- * Socket.IO Event Handlers
- * Zero-latency chat event handling
- * All database operations are fire-and-forget via message queue
- */
-
 const logger = require('../config/logger');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * Register all chat event handlers
@@ -59,8 +54,8 @@ function registerChatHandlers(io, messageQueue) {
         return;
       }
 
-      // Generate unique messageId
-      const messageId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Generate unique messageId using UUID
+      const messageId = uuidv4();
 
       // Create message object
       const message = {

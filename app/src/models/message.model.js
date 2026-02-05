@@ -1,4 +1,5 @@
 const { DataTypes } = require('sequelize');
+const { v4: uuidv4 } = require('uuid');
 const sequelize = require('../config/database');
 
 const Message = sequelize.define('Message', {
@@ -19,7 +20,7 @@ const Message = sequelize.define('Message', {
   },
 
   conversationId: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.STRING(36),
     allowNull: false,
     index: true,
   },
@@ -47,6 +48,12 @@ const Message = sequelize.define('Message', {
   isDeleted: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
+  },
+  messageId: {
+    type: DataTypes.UUID,
+    defaultValue: () => uuidv4(),
+    allowNull: false,
+    unique: true,
   },
 
 }, {
