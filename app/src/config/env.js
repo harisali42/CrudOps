@@ -22,6 +22,27 @@ const envSchema = Joi.object({
   ADMIN_EMAIL: Joi.string().email().required(),
   ADMIN_PASSWORD: Joi.string().min(6).required(),
   ADMIN_NAME: Joi.string().required(),
+
+  // SMTP
+  SMTP_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
+  SMTP_HOST: Joi.when('SMTP_ENABLED', {
+    is: true,
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow('').optional(),
+  }),
+  SMTP_PORT: Joi.number().integer().default(587),
+  SMTP_SECURE: Joi.boolean().truthy('true').falsy('false').default(false),
+  SMTP_USER: Joi.when('SMTP_ENABLED', {
+    is: true,
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow('').optional(),
+  }),
+  SMTP_PASS: Joi.when('SMTP_ENABLED', {
+    is: true,
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow('').optional(),
+  }),
+  SMTP_FROM: Joi.string().email().allow('').optional(),
   
   // Logging
   LOG_LEVEL: Joi.string().valid(...getEnumValues(LOG_LEVEL)).default(LOG_LEVEL.INFO),

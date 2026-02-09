@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const { User, Role, UserRole } = require('../models');
 const { getEnumValues, ROLE } = require('../constants/enums');
 const { getPagination, getPagingData } = require('../utils/pagination');
+const { sendWelcomeEmail } = require('./email.service');
 
 // ---Create user---
 async function createUser(userData) {
@@ -114,6 +115,8 @@ async function createUser(userData) {
     const newUser = await User.sequelize.query(fetchUserQuery, {
       type: User.sequelize.QueryTypes.SELECT,
     });
+
+    await sendWelcomeEmail(newUser[0]);
 
     return {
       success: true,
