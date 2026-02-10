@@ -63,6 +63,10 @@ const assignRole = require('./userRole/assignRole');
 const removeRole = require('./userRole/removeRole');
 const getUserRoles = require('./userRole/getUserRoles');
 
+// Attendance controllers
+const markClassAttendance = require('./attendance/mark');
+const getMyAttendance = require('./attendance/getMy');
+
 module.exports = {
   // User
   createUser,
@@ -119,4 +123,7 @@ module.exports = {
   deleteCourse,
   enrollStudent,
   assignTeacherToCourse,
+  // Attendance
+  markClassAttendance,
+  getMyAttendance,
 };

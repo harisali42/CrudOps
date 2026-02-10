@@ -21,6 +21,9 @@ const { loginUser, logoutUser } = require('./auth.service');
 // Email services
 const { sendEmail, sendWelcomeEmail } = require('./email.service');
 
+// Attendance services
+const { markClassAttendance, getStudentAttendance } = require('./attendance.service');
+
 module.exports = {
   // User
   createUser,
@@ -67,4 +70,7 @@ module.exports = {
   getAllTeachers,
   updateTeacher,
   deleteTeacher,
+  // Attendance
+  markClassAttendance,
+  getStudentAttendance,
 };

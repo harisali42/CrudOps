@@ -46,5 +46,13 @@ exports.USER_TYPE = {
   COMMERCE: 'Commerce',
 };
 
+// Attendance status
+exports.ATTENDANCE_STATUS = {
+  PRESENT: 'present',
+  ABSENT: 'absent',
+  LATE: 'late',
+  LEAVE: 'leave',
+};
+
 // Get all valid values from enum
 exports.getEnumValues = (enumObj) => Object.values(enumObj);

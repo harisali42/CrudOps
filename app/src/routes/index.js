@@ -8,4 +8,5 @@ module.exports = {
   classRoutes: require('./class.routes'),
   courseRoutes: require('./course.routes'),
   departmentRoutes: require('./department.routes'),
+  attendanceRoutes: require('./attendance.routes'),
 };

@@ -59,6 +59,7 @@ app.use('/api/v1/teachers', routes.teacherRoutes);
 app.use('/api/v1/classes', routes.classRoutes);
 app.use('/api/v1/courses', routes.courseRoutes);
 app.use('/api/v1/departments', routes.departmentRoutes);
+app.use('/api/v1/attendance', routes.attendanceRoutes);
 
 // Chat status endpoint (for monitoring)
 app.get('/api/v1/chat/status', (req, res) => {
