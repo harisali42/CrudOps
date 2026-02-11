@@ -8,13 +8,12 @@ const compression = require('compression');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger/swagger');
 
-const logger = require('./config/logger');
 const initDatabase = require('./config/database.init');
 const { limiter, authLimiter } = require('./config/rateLimiting');
 const { errorHandler, notFoundHandler } = require('./middlewares/error.middleware');
 
 // Routes
-const routes = require('./routes');
+const router = require('./routes');
 
 require('./models');
 require('./jobs'); // Initialize cron jobs
@@ -47,18 +46,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   },
 }));
 
-// Health check endpoint
-routes.healthRoutes(app);
 
-// API routes
-app.use('/api/v1/users', routes.userRoutes);
-app.use('/api/v1/roles', routes.roleRoutes);
-app.use('/api/v1/auth', routes.authRoutes);
-app.use('/api/v1/students', routes.studentRoutes);
-app.use('/api/v1/teachers', routes.teacherRoutes);
-app.use('/api/v1/classes', routes.classRoutes);
-app.use('/api/v1/courses', routes.courseRoutes);
-app.use('/api/v1/departments', routes.departmentRoutes);
+
+// Register all routes under /api
+app.use('/api', router);
 
 // Chat status endpoint (for monitoring)
 app.get('/api/v1/chat/status', (req, res) => {
