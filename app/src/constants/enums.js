@@ -31,6 +31,19 @@ exports.ROLE = {
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
   USER: 'USER',
+  STUDENT: 'STUDENT',
+  TEACHER: 'TEACHER',
+};
+
+// User Types
+exports.USER_TYPE = {
+  GENERAL: 'General',
+  SCIENCE: 'Science',
+  ARTS: 'Arts',
+  PRE_ENGINEERING: 'Pre-Engineering',
+  PRE_MEDICAL: 'Pre-Medical',
+  ICS: 'ICS',
+  COMMERCE: 'Commerce',
 };
 
 // Get all valid values from enum

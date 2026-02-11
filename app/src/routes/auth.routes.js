@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/auth.controller');
-const { validateSchema } = require('../middlewares/validate.schema.middleware');
-const { loginSchema } = require('../validations/auth.validation');
+const { loginUser, logoutUser } = require('../controllers');
 
-router.post('/login', validateSchema(loginSchema), authController.loginUser);
-router.post('/logout', authController.logoutUser);
+
+// Login user and get token
+router.post('/login', loginUser);
+
+// Logout user (invalidate token if applicable, usually client-side)
+router.post('/logout', require('../middlewares/auth.middleware').authenticate, logoutUser);
 
 module.exports = router;

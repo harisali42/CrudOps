@@ -1,61 +1,80 @@
 const bcrypt = require('bcrypt');
-const { User, Session } = require('../models');
+const { User, Session, UserRole, Role } = require('../models');
 const { generateToken } = require('../config/jwt');
 
-/**
- * LOGIN USER
- */
-exports.loginUser = async (email, password) => {
+// Login user
+async function loginUser(email, password) {
   if (!email || !password) {
-    throw new Error('Email and password are required');
+    return { success: false, message: 'Email and password are required' };
   }
-
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ 
+    where: { email },
+    include: [
+      {
+        model: UserRole,
+        include: [{ model: Role, attributes: ['name'] }]
+      }
+    ]
+  });
   if (!user) {
-    throw new Error('Invalid credentials');
+    return { success: false, message: 'Invalid credentials' };
   }
-
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    throw new Error('Invalid credentials');
+    return { success: false, message: 'Invalid credentials' };
   }
-
-  if (!user.isActive) {
-    throw new Error('User is inactive');
+  if (user.status !== 'active') {
+    return { success: false, message: 'User is inactive' };
   }
+  
+  // Extract roles
+  const roles = user.UserRoles 
+    ? user.UserRoles.map(ur => ur.Role && ur.Role.name).filter(Boolean)
+    : [];
 
-  const token = generateToken({ userId: user.id });
+  // Create session first
+  const session = await Session.create({ userId: user.id });
+  // Generate token with userId + sessionId + roles
+  const token = generateToken({ userId: user.id, sessionId: session.id, roles });
 
-  await Session.create({
-    userId: user.id,
-    token,
-  });
 
   return {
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
+    success: true,
+    data: {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        status: user.status,
+        roles, // Return roles to frontend
+      },
+      sessionId: session.id,
     },
   };
-};
+}
 
-/**
- * LOGOUT USER
- */
-exports.logoutUser = async (token) => {
-  if (!token) {
-    throw new Error('Token missing');
+// Logout user
+async function logoutUser(sessionId) {
+  if (!sessionId) {
+    return { success: false, message: 'Session ID missing' };
   }
-
-  const session = await Session.findOne({ where: { token } });
+  const session = await Session.findOne({
+    where: {
+      id: sessionId,
+      isValid: true,
+    },
+  });
   if (!session) {
-    throw new Error('Invalid session');
+    return { success: false, message: 'Session already logged out or invalid' };
   }
-
   session.isValid = false;
   await session.save();
+  return { success: true, data: session };
+}
 
-  return session;
+module.exports = {
+  loginUser,
+  logoutUser,
 };

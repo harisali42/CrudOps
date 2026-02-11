@@ -1,62 +1,67 @@
 const { Role } = require('../models');
 
-/**
- * CREATE ROLE
- */
-exports.createRole = async (name, description) => {
-  if (!name) {
-    throw new Error('Role name is required');
-  }
+//const models = require('../models');
 
+// Create role
+async function createRole({ name, description }) {
+  if (!name) {
+    return { success: false, message: 'Role name is required' };
+  }
   const existingRole = await Role.findOne({ where: { name } });
   if (existingRole) {
-    throw new Error('Role already exists');
+    return { success: false, message: 'Role already exists' };
   }
+  const newRole = await Role.create({ name, description });
+  return { success: true, data: newRole };
+}
 
-  return Role.create({ name, description });
-};
+// Get all roles
+async function getAllRoles() {
+  const roles = await Role.findAll();
+  return { success: true, message: 'Roles fetched', data: roles };
+}
 
-/**
- * GET ALL ROLES
- */
-exports.getAllRoles = async () => {
-  return Role.findAll();
-};
-
-/**
- * GET ROLE BY ID
- */
-exports.getRoleById = async (id) => {
+// Get role by ID
+async function getRoleById(id) {
   const role = await Role.findByPk(id);
   if (!role) {
-    throw new Error('Role not found');
+    return { success: false, message: 'Role not found' };
   }
+  return { success: true, data: role };
+}
 
-  return role;
-};
-
-/**
- * UPDATE ROLE
- */
-exports.updateRole = async (id, name, description) => {
+// Update role
+async function updateRole(data) {
+  const { id, name, description } = data;
   const role = await Role.findByPk(id);
   if (!role) {
-    throw new Error('Role not found');
+    return {
+      success: false,
+      message: 'Role not found',
+      data: null
+    };
   }
-
   await role.update({ name, description });
-  return role;
-};
+  return {
+    success: true,
+    data: role
+  };
+}
 
-/**
- * DELETE ROLE
- */
-exports.deleteRole = async (id) => {
+// Delete role
+async function deleteRole(id) {
   const role = await Role.findByPk(id);
   if (!role) {
-    throw new Error('Role not found');
+    return { success: false, message: 'Role not found' };
   }
-
   await role.destroy();
-  return role;
+  return { success: true, message: 'Role deleted', data: role };
+}
+
+module.exports = {
+  createRole,
+  getAllRoles,
+  getRoleById,
+  updateRole,
+  deleteRole,
 };

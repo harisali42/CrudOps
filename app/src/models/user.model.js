@@ -1,6 +1,6 @@
-// module.exports = (sequelize, DataTypes) => {};
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const { USER_TYPE } = require('../constants/enums');
 
 const User = sequelize.define('User', {
   id: {
@@ -9,15 +9,19 @@ const User = sequelize.define('User', {
     primaryKey: true,
   },
 
-  name: {
-    type: DataTypes.STRING(100),
+  firstName: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+  },
+  lastName: {
+    type: DataTypes.STRING(50),
     allowNull: false,
   },
 
   email: {
     type: DataTypes.STRING(150),
     allowNull: false,
-    unique: 'unique_email', // Named unique constraint
+    unique: true,
   },
 
   password: {
@@ -25,9 +29,16 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
 
-  isActive: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
+  status: {
+    type: DataTypes.ENUM('active', 'non-active'),
+    defaultValue: 'active',
+    allowNull: false,
+  },
+  
+  userType: {
+    type: DataTypes.ENUM(...Object.values(USER_TYPE)),
+    defaultValue: USER_TYPE.GENERAL,
+    allowNull: false,
   },
 
 }, {

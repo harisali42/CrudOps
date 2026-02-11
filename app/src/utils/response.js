@@ -1,9 +1,15 @@
+
 const sendResponse = (res, status, success, message, data = null) => {
-  return res.status(status).json({
+  const response = {
     success,
     message,
-    data,
-  });
+  };
+
+  if (data !== null && data !== undefined) {
+    response.data = data;
+  }
+
+  return res.status(status).json(response);
 };
 
 module.exports = { sendResponse };

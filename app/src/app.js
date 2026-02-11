@@ -5,6 +5,8 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger/swagger');
 
 const logger = require('./config/logger');
 const initDatabase = require('./config/database.init');
@@ -12,11 +14,7 @@ const { limiter, authLimiter } = require('./config/rateLimiting');
 const { errorHandler, notFoundHandler } = require('./middlewares/error.middleware');
 
 // Routes
-const userRoutes = require('./routes/user.routes');
-const roleRoutes = require('./routes/role.routes');
-const authRoutes = require('./routes/auth.routes');
-const userRoleRoutes = require('./routes/userRole.routes');
-const healthRoutes = require('./routes/health.routes');
+const routes = require('./routes');
 
 require('./models');
 require('./jobs'); // Initialize cron jobs
@@ -39,14 +37,29 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
 
+// Swagger API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'CrudOps API Documentation',
+  swaggerOptions: {
+    docExpansion: 'none', // Collapse all dropdowns by default
+    defaultModelsExpandDepth: -1, // Hide schemas section at the bottom
+  },
+}));
+
 // Health check endpoint
-healthRoutes(app);
+routes.healthRoutes(app);
 
 // API routes
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/roles', roleRoutes);
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/user-roles', userRoleRoutes);
+app.use('/api/v1/users', routes.userRoutes);
+app.use('/api/v1/roles', routes.roleRoutes);
+app.use('/api/v1/auth', routes.authRoutes);
+app.use('/api/v1/students', routes.studentRoutes);
+app.use('/api/v1/teachers', routes.teacherRoutes);
+app.use('/api/v1/classes', routes.classRoutes);
+app.use('/api/v1/courses', routes.courseRoutes);
+app.use('/api/v1/departments', routes.departmentRoutes);
+
 
 // 404 handler & Global error handler (must be last)
 app.use(notFoundHandler);

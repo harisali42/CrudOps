@@ -1,4 +1,3 @@
-// module.exports = (sequelize, DataTypes) => {};
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -17,6 +16,11 @@ const UserRole = sequelize.define('UserRole', {
   roleId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+  },
+
+  deletedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
   },
 
 }, {
