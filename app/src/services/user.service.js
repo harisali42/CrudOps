@@ -2,222 +2,577 @@ const bcrypt = require('bcrypt');
 const { User, Role, UserRole } = require('../models');
 const { getEnumValues, ROLE } = require('../constants/enums');
 const { getPagination, getPagingData } = require('../utils/pagination');
+const { sendWelcomeEmail } = require('./email.service');
 
-// Create user
+// ---Create user---
 async function createUser(userData) {
   const { firstName, lastName, email, password, userType } = userData;
+
   if (!firstName || !lastName || !email || !password) {
     return {
       success: false,
       message: 'First name, last name, email, and password are required',
     };
   }
-  const existingUser = await User.findOne({ where: { email } });
-  if (existingUser) {
+
+  //  Check if email already exists
+  const checkEmailQuery = `
+    SELECT id
+    FROM users
+    WHERE email = '${email}' AND deletedAt IS NULL;
+  `;
+
+  const existingUser = await User.sequelize.query(checkEmailQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  if (existingUser.length > 0) {
     return {
       success: false,
       message: 'Email already exists',
     };
   }
 
-  // Transaction for User + Default Role
-  const result = await User.sequelize.transaction(async (t) => {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({
+  //  Hash password (JS responsibility)
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  //  Start transaction
+  const transaction = await User.sequelize.transaction();
+
+  try {
+    //  Insert user
+    const insertUserQuery = `
+      INSERT INTO users
+        (firstName, lastName, email, password, userType, createdAt, updatedAt)
+      VALUES
+        ('${firstName}', '${lastName}', '${email}', '${hashedPassword}', '${userType}', NOW(), NOW());
+    `;
+
+    const insertResult = await User.sequelize.query(insertUserQuery, {
+      transaction,
+      type: User.sequelize.QueryTypes.INSERT,
+    });
+
+    const newUserId = insertResult[0];
+
+    //  Get or create default USER role
+    const roleQuery = `
+      SELECT id
+      FROM roles
+      WHERE name = '${ROLE.USER}';
+    `;
+
+    let roleResult = await User.sequelize.query(roleQuery, {
+      transaction,
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    let roleId;
+
+    if (roleResult.length === 0) {
+      const insertRoleQuery = `
+        INSERT INTO roles (name, description, createdAt, updatedAt)
+        VALUES ('${ROLE.USER}', 'Regular User', NOW(), NOW());
+      `;
+
+      const roleInsertResult = await User.sequelize.query(insertRoleQuery, {
+        transaction,
+        type: User.sequelize.QueryTypes.INSERT,
+      });
+
+      roleId = roleInsertResult[0];
+    } else {
+      roleId = roleResult[0].id;
+    }
+
+    //  Assign role to user
+    const assignRoleQuery = `
+      INSERT INTO user_roles (userId, roleId, createdAt, updatedAt)
+      VALUES (${newUserId}, ${roleId}, NOW(), NOW());
+    `;
+
+    await User.sequelize.query(assignRoleQuery, {
+      transaction,
+      type: User.sequelize.QueryTypes.INSERT,
+    });
+
+    //  Commit transaction
+    await transaction.commit();
+
+    //  Fetch created user (without password)
+    const fetchUserQuery = `
+      SELECT
+        id,
+        firstName,
+        lastName,
+        email,
+        userType,
+        createdAt
+      FROM users
+      WHERE id = ${newUserId};
+    `;
+
+    const newUser = await User.sequelize.query(fetchUserQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    await sendWelcomeEmail(newUser[0]);
+
+    return {
+      success: true,
+      message: 'User created successfully',
+      data: newUser[0],
+    };
+
+  } catch (error) {
+    // Rollback on error
+    await transaction.rollback();
+    throw error;
+  }
+}
+
+
+// ---Get all users (with roles)---
+async function getAllUsers(page = 0, size = 10) {
+  const limit = size;
+  const offset = page * size;
+
+  const query = `
+    SELECT
+      u.id,
+      u.firstName,
+      u.lastName,
+      u.email,
+      u.userType,
+      u.status,
+      u.createdAt,
+      u.updatedAt,
+      u.deletedAt,
+      r.name AS roleName
+    FROM users u
+    LEFT JOIN user_roles ur ON ur.userId = u.id AND ur.deletedAt IS NULL
+    LEFT JOIN roles r ON r.id = ur.roleId
+    ORDER BY u.createdAt DESC
+    LIMIT ${limit} OFFSET ${offset};
+  `;
+
+  const countQuery = `
+    SELECT COUNT(DISTINCT u.id) AS total
+    FROM users u;
+  `;
+
+  const usersRows = await User.sequelize.query(query, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  const countResult = await User.sequelize.query(countQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  const totalItems = countResult[0].total;
+
+  const usersMap = {};
+
+  usersRows.forEach(row => {
+    if (!usersMap[row.id]) {
+      usersMap[row.id] = {
+        id: row.id,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        userType: row.userType,
+        status: row.status,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        deletedAt: row.deletedAt,
+        roles: []
+      };
+    }
+
+    if (row.roleName) {
+      usersMap[row.id].roles.push(row.roleName);
+    }
+  });
+
+  return {
+    success: true,
+    data: {
+      totalItems,
+      users: Object.values(usersMap),
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit)
+    }
+  };
+}
+
+// ---Get user by ID (with roles)---
+async function getUserById(id) {
+  const query = `
+    SELECT
+      u.id,
+      u.firstName,
+      u.lastName,
+      u.email,
+      u.userType,
+      u.status,
+      u.createdAt,
+      u.updatedAt,
+      u.deletedAt,
+      r.name AS roleName
+    FROM users u
+    LEFT JOIN user_roles ur ON ur.userId = u.id AND ur.deletedAt IS NULL
+    LEFT JOIN roles r ON r.id = ur.roleId
+    WHERE u.id = ${id};
+  `;
+
+  const rows = await User.sequelize.query(query, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  if (!rows || rows.length === 0) {
+    return { success: false, message: 'User not found' };
+  }
+
+  // Build user object + roles
+  const user = {
+    id: rows[0].id,
+    firstName: rows[0].firstName,
+    lastName: rows[0].lastName,
+    email: rows[0].email,
+    userType: rows[0].userType,
+    status: rows[0].status,
+    createdAt: rows[0].createdAt,
+    updatedAt: rows[0].updatedAt,
+    deletedAt: rows[0].deletedAt,
+    roles: []
+  };
+
+  rows.forEach(row => {
+    if (row.roleName) {
+      user.roles.push(row.roleName);
+    }
+  });
+
+  return {
+    success: true,
+    data: user
+  };
+}
+
+
+// ---Update user---
+async function updateUser(data) {
+  const { id, firstName, lastName, status, userType } = data;
+
+  //  Check if user exists
+  const checkQuery = `
+    SELECT id
+    FROM users
+    WHERE id = ${id} AND deletedAt IS NULL;
+  `;
+
+  const existingUser = await User.sequelize.query(checkQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  if (!existingUser || existingUser.length === 0) {
+    return { success: false, message: 'User not found' };
+  }
+
+  //  Update
+  const updateQuery = `
+    UPDATE users
+    SET
+      firstName = '${firstName}',
+      lastName = '${lastName}',
+      status = '${status}',
+      userType = '${userType}',
+      updatedAt = NOW()
+    WHERE id = ${id};
+  `;
+
+  await User.sequelize.query(updateQuery, {
+    type: User.sequelize.QueryTypes.UPDATE,
+  });
+
+  // Fetch updated user (without password)
+  const fetchQuery = `
+    SELECT
+      id,
       firstName,
       lastName,
       email,
-      password: hashedPassword,
+      status,
       userType,
-    }, { transaction: t });
+      createdAt,
+      updatedAt
+    FROM users
+    WHERE id = ${id};
+  `;
 
-    // Assign default USER role
-    const [defaultRole] = await Role.findOrCreate({ 
-        where: { name: ROLE.USER },
-        defaults: { description: 'Regular User' },
-        transaction: t
-    });
-
-    await UserRole.create({
-        userId: newUser.id,
-        roleId: defaultRole.id
-    }, { transaction: t });
-
-    return newUser;
+  const updatedUser = await User.sequelize.query(fetchQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
   });
 
   return {
     success: true,
-    message: 'User created successfully',
-    data: result
+    message: 'User updated',
+    data: updatedUser[0],
   };
 }
 
-// Get all users (with roles)
-async function getAllUsers(page = 0, size = 10) {
-const { limit, offset } = getPagination(page, size);
-  const { count, rows } = await User.findAndCountAll({
-  distinct: true,
-  attributes: { exclude: ['password'] },
-  limit,
-  offset,
-  order: [['createdAt', 'DESC']],
-  include: [
-      {
-        model: UserRole,          
-        attributes: ['id', 'roleId'], 
-        include: [
-          {
-            model: Role,            
-            attributes: ['id', 'name']
-          }
-        ]
-      }
-    ]
-  });
 
-  const items = rows.map(user => {
-  const userJson = user.toJSON();
-  userJson.roles = userJson.UserRoles
-    ? userJson.UserRoles.map(ur => ur.Role.name)
-    : [];
-  delete userJson.UserRoles; 
-  return userJson;
-});
-
-  return {
-    success: true,
-    data: getPagingData({ count, rows: items }, page, limit),
-  };
-}
-
-// Get user by ID (with roles)
-async function getUserById(id) {
-  const user = await User.findOne({
-    where: { id },
-    attributes: { exclude: ['password'] },
-    include: [
-      {
-        model: UserRole,
-        attributes: ['id', 'roleId'],
-        include: [
-          {
-            model: Role,
-            attributes: ['id', 'name']
-          }
-        ]
-      }
-    ]
-  });
-  
-  if (!user) {
-    return { success: false, message: 'User not found' };
-  }
-  const userJson = user.toJSON();
-  // Flatten roles from UserRoles, always map over an array
-  userJson.roles = Array.isArray(userJson.UserRoles)
-    ? userJson.UserRoles.map(ur => ur.Role && ur.Role.name).filter(Boolean)
-    : [];
-  delete userJson.UserRoles;
-  return { success: true, data: userJson };
-}
-
-// Update user
-async function updateUser(data) {
-  const { id, firstName, lastName, status, userType } = data;
-  const user = await User.findByPk(id);
-  if (!user) {
-    return { success: false, message: 'User not found' };
-  }
-  await user.update({ firstName, lastName, status, userType });
-  return { success: true, message: 'User updated', data: user };
-}
-
-// Delete user
+// ---Delete user---
 async function deleteUser(id) {
-  const user = await User.findByPk(id);
-  if (!user) {
+  //  Check if user exists
+  const findUserQuery = `
+    SELECT
+      id,
+      firstName,
+      lastName,
+      email,
+      userType,
+      createdAt
+    FROM users
+    WHERE id = ${id} AND deletedAt IS NULL;
+  `;
+
+  const users = await User.sequelize.query(findUserQuery, {
+    type: User.sequelize.QueryTypes.SELECT,
+  });
+
+  if (users.length === 0) {
     return { success: false, message: 'User not found' };
   }
-  await user.destroy();
-  return { success: true, data: user };
+
+  const user = users[0];
+
+  //  Delete user
+  const deleteUserQuery = `
+    DELETE FROM users
+    WHERE id = ${id};
+  `;
+
+  await User.sequelize.query(deleteUserQuery, {
+    type: User.sequelize.QueryTypes.DELETE,
+  });
+
+  // Return deleted user data
+  return {
+    success: true,
+    data: user,
+  };
 }
 
-// Assign role to user
+
+
+// ---Assign role to user---
 async function assignRole(userId, roleName) {
   try {
-    const user = await User.findByPk(userId);
-    if (!user) {
+    /*  Check if user exists */
+    const userQuery = `
+      SELECT id
+      FROM users
+      WHERE id = ${userId} AND deletedAt IS NULL;
+    `;
+
+    const users = await User.sequelize.query(userQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (users.length === 0) {
       return { success: false, message: 'User not found' };
     }
+
+    /*  Validate role name (JS-side, same as before) */
     const validRoles = getEnumValues(require('../constants/enums').ROLE);
     if (!validRoles.includes(roleName)) {
-      return { success: false, message: `Invalid role. Allowed roles: ${validRoles.join(', ')}` };
+      return {
+        success: false,
+        message: `Invalid role. Allowed roles: ${validRoles.join(', ')}`,
+      };
     }
-    const role = await Role.findOne({ where: { name: roleName } });
-    if (!role) {
+
+    /*  Get role by name (case-sensitive) */
+    const roleQuery = `
+      SELECT id, name
+      FROM roles
+      WHERE BINARY name = '${roleName}';
+    `;
+
+    const roles = await User.sequelize.query(roleQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (roles.length === 0) {
       return { success: false, message: 'Role not found' };
     }
-    const existingAssignment = await UserRole.findOne({ where: { userId: user.id, roleId: role.id } });
-    if (existingAssignment) {
+
+    const role = roles[0];
+
+    /*  Check if role already assigned (excluding soft-deleted) */
+    const checkAssignmentQuery = `
+      SELECT id
+      FROM user_roles
+      WHERE userId = ${userId}
+        AND roleId = ${role.id}
+        AND deletedAt IS NULL;
+    `;
+
+    const existing = await User.sequelize.query(checkAssignmentQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (existing.length > 0) {
       return { success: false, message: 'Role already assigned to user' };
     }
-    const userRole = await UserRole.create({ userId: user.id, roleId: role.id });
-    return { 
-      success: true, 
-      message: 'Role assigned successfully', 
-      data: { 
-        userId: user.id, 
+
+    /*  Assign role */
+    const assignRoleQuery = `
+      INSERT INTO user_roles (userId, roleId)
+      VALUES (${userId}, ${role.id});
+    `;
+
+    await User.sequelize.query(assignRoleQuery, {
+      type: User.sequelize.QueryTypes.INSERT,
+    });
+
+    return {
+      success: true,
+      message: 'Role assigned successfully',
+      data: {
+        userId,
         role: role.name,
-        assignedAt: userRole.createdAt
-      } 
+        assignedAt: new Date(),
+      },
     };
   } catch (error) {
     return { success: false, message: error.message };
   }
 }
 
-// Remove role from user
+
+// ---Remove role from user---
 async function removeRole(userId, roleName) {
-  const user = await User.findByPk(userId);
-  if (!user) return { success: false, message: 'User not found' };
-  const validRoles = getEnumValues(require('../constants/enums').ROLE);
-  if (!validRoles.includes(roleName)) {
-    return { success: false, message: `Invalid role. Allowed roles: ${validRoles.join(', ')}` };
+  try {
+    /* Check if user exists */
+    const userQuery = `
+      SELECT id
+      FROM users
+      WHERE id = ${userId} AND deletedAt IS NULL;
+    `;
+
+    const users = await User.sequelize.query(userQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (users.length === 0) {
+      return { success: false, message: 'User not found' };
+    }
+
+    /*  Validate role name (JS-side, same as before) */
+    const validRoles = getEnumValues(require('../constants/enums').ROLE);
+    if (!validRoles.includes(roleName)) {
+      return {
+        success: false,
+        message: `Invalid role. Allowed roles: ${validRoles.join(', ')}`,
+      };
+    }
+
+    /*  Get role by name (case-sensitive) */
+    const roleQuery = `
+      SELECT id, name
+      FROM roles
+      WHERE BINARY name = '${roleName}';
+    `;
+
+    const roles = await User.sequelize.query(roleQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (roles.length === 0) {
+      return { success: false, message: 'Role not found' };
+    }
+
+    const role = roles[0];
+
+    /* Soft-delete role assignment */
+    const deleteQuery = `
+      UPDATE user_roles
+      SET deletedAt = NOW()
+      WHERE userId = ${userId}
+        AND roleId = ${role.id}
+        AND deletedAt IS NULL;
+    `;
+
+    const result = await User.sequelize.query(deleteQuery, {
+      type: User.sequelize.QueryTypes.UPDATE,
+    });
+
+    const affectedRows = typeof result === 'number'
+      ? result
+      : (result?.[1] ?? result?.[0]?.affectedRows ?? 0);
+
+    if (!affectedRows) {
+      return { success: false, message: 'Role assignment not found' };
+    }
+
+    return {
+      success: true,
+      message: 'Role removed successfully',
+      data: {
+        userId,
+        role: role.name,
+      },
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
   }
-  const role = await Role.findOne({ where: { name: roleName } });
-  if (!role) return { success: false, message: 'Role not found' };
-  const deleted = await UserRole.destroy({ where: { userId: user.id, roleId: role.id } });
-  if (!deleted) return { success: false, message: 'Role assignment not found' };
-  return { 
-    success: true, 
-    message: 'Role removed successfully',
-    data: { 
-      userId: user.id, 
-      role: role.name 
-    } 
-  };
 }
+
 
 // Get all roles for a user
 async function getUserRoles(userId) {
-  const user = await User.findByPk(userId, {
-    include: [
-      {
-        model: UserRole,
-        include: [
-          {
-            model: Role,
-            attributes: ['id', 'name']
-          }
-        ]
-      }
-    ]
-  });
-  if (!user) return { success: false, message: 'User not found' };
-  // Return array of roles
-  const roles = user.UserRoles ? user.UserRoles.map(ur => ur.Role && ur.Role.name).filter(Boolean) : [];
-  return { success: true, message: 'Roles fetched', data: roles };
+  try {
+    /*  Check if user exists */
+    const userQuery = `
+      SELECT id
+      FROM users
+      WHERE id = ${userId} AND deletedAt IS NULL;
+    `;
+
+    const users = await User.sequelize.query(userQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    if (users.length === 0) {
+      return { success: false, message: 'User not found' };
+    }
+
+    /*  Fetch roles for the user */
+    const rolesQuery = `
+      SELECT r.name AS roleName
+      FROM user_roles ur
+      LEFT JOIN roles r ON r.id = ur.roleId
+      WHERE ur.userId = ${userId}
+        AND ur.deletedAt IS NULL;
+    `;
+
+    const rows = await User.sequelize.query(rolesQuery, {
+      type: User.sequelize.QueryTypes.SELECT,
+    });
+
+    /*  Map roles into array */
+    const roles = rows.map(row => row.roleName).filter(Boolean);
+
+    return {
+      success: true,
+      message: 'Roles fetched',
+      data: roles,
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 }
 
 module.exports = {

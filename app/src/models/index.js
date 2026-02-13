@@ -13,6 +13,7 @@ const StudentCourse = require('./studentCourse.model');
 const TeacherCourse = require('./teacherCourse.model');
 const TeacherClass = require('./teacherClass.model');
 const Department = require('./department.model');
+const Message = require('./message.model');
 
 // User → Role (Many-to-Many through UserRole)
 User.hasMany(UserRole, { foreignKey: 'userId' });
@@ -83,6 +84,7 @@ const models = {
   TeacherCourse,
   TeacherClass,
   Department,
+  Message,
 };
 
 module.exports = models;

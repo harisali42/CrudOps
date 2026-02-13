@@ -8,7 +8,7 @@ async function loginUser(email, password) {
     return { success: false, message: 'Email and password are required' };
   }
   const user = await User.findOne({ 
-    where: { email },
+    where: { email, deletedAt: null },
     include: [
       {
         model: UserRole,

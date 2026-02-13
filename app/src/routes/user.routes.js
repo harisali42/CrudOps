@@ -8,7 +8,7 @@ const { authorize } = require('../middlewares/role.middleware');
 // Get all users
 router.get('/', authenticate, authorize('ADMIN'), getAllUsers);
 // Create user
-router.post('/', createUser);
+router.post('/', authenticate, authorize('ADMIN'), createUser);
 // Get, Update, Delete user by ID
 router.get('/:id', authenticate, authorize('ADMIN'), getUserById);
 router.put('/:id', authenticate, authorize('ADMIN'), updateUser);

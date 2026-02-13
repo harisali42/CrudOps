@@ -18,6 +18,9 @@ const { createDepartment, getAllDepartments, getDepartmentById, updateDepartment
 // Auth services
 const { loginUser, logoutUser } = require('./auth.service');
 
+// Email services
+const { sendEmail, sendWelcomeEmail } = require('./email.service');
+
 module.exports = {
   // User
   createUser,
@@ -49,6 +52,9 @@ module.exports = {
   // Auth
   loginUser,
   logoutUser,
+  // Email
+  sendEmail,
+  sendWelcomeEmail,
   // Student
   createStudent,
   getStudentById,
